@@ -126,11 +126,7 @@ function ResumeDetailPage() {
 
   useEffect(() => {
     const events = new EventSource("/api/events");
-    events.addEventListener("resume-changed", (raw) => {
-      const event = JSON.parse(
-        (raw as MessageEvent).data,
-      ) as ResumeChangedEvent;
-      if (event.id !== resume.id) return;
+    const refresh = () => {
       void (async () => {
         if (saving.current) await saving.current;
         const latest = await getResume(resume.id);
@@ -159,6 +155,13 @@ function ResumeDetailPage() {
         setMessage(String(cause));
         setStatus("error");
       });
+    };
+    events.addEventListener("open", refresh);
+    events.addEventListener("resume-changed", (raw) => {
+      const event = JSON.parse(
+        (raw as MessageEvent).data,
+      ) as ResumeChangedEvent;
+      if (event.id === resume.id) refresh();
     });
     return () => events.close();
   }, [resume.id]);

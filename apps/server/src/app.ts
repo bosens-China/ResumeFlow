@@ -59,6 +59,19 @@ function jsonValidator<T extends z.ZodType>(schema: T) {
   });
 }
 
+function duplicateResume(store: ResumeStore, id: string) {
+  const original = store.get(id);
+  if (!original) return undefined;
+  const suffix = " (副本)";
+  return store.create(
+    `${original.title
+      .slice(0, 120 - suffix.length)
+      .replace(/[\uD800-\uDBFF]$/, "")
+      .trimEnd()}${suffix}`,
+    original.markdown,
+  );
+}
+
 function mcpHandler(store: ResumeStore) {
   return createMcpHandler(() => {
     const server = new McpServer({ name: "resumeflow", version: "0.1.0" });
@@ -108,10 +121,8 @@ function mcpHandler(store: ResumeStore) {
       "duplicate_resume",
       { description: "创建指定简历的副本", inputSchema: idInput },
       async ({ id }) => {
-        const original = store.get(id);
-        return original
-          ? text(store.create(`${original.title} (副本)`, original.markdown))
-          : error("简历不存在");
+        const copy = duplicateResume(store, id);
+        return copy ? text(copy) : error("简历不存在");
       },
     );
     server.registerTool(
@@ -189,13 +200,8 @@ export function createApp(store = createStore()) {
       return c.json(result.resume);
     })
     .post("/api/resumes/:id/duplicate", (c) => {
-      const original = store.get(c.req.param("id"));
-      return original
-        ? c.json(
-            store.create(`${original.title} (副本)`, original.markdown),
-            201,
-          )
-        : c.json({ error: "简历不存在" }, 404);
+      const copy = duplicateResume(store, c.req.param("id"));
+      return copy ? c.json(copy, 201) : c.json({ error: "简历不存在" }, 404);
     })
     .delete(
       "/api/resumes/:id",

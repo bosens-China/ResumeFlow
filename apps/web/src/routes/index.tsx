@@ -54,11 +54,13 @@ function ResumeListPage() {
 
   useEffect(() => {
     const events = new EventSource("/api/events");
-    events.addEventListener("resume-changed", () => {
+    const refresh = () => {
       void listResumes()
         .then(setResumes)
         .catch((cause: unknown) => setError(String(cause)));
-    });
+    };
+    events.addEventListener("open", refresh);
+    events.addEventListener("resume-changed", refresh);
     return () => events.close();
   }, []);
 
