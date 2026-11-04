@@ -234,7 +234,7 @@ export function createApp(store = createStore()) {
       if (requested && requested !== String(resume.revision))
         return c.json({ error: "版本冲突", current: resume }, 409);
       try {
-        const pdf = await resumePdf(resume, `http://127.0.0.1:${serverPort}`);
+        const pdf = await resumePdf(resume);
         const disposition =
           c.req.query("download") === "1"
             ? `attachment; filename="resume.pdf"; filename*=UTF-8''${encodeURIComponent(resume.title)}.pdf`

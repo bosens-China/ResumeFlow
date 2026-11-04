@@ -27,9 +27,30 @@ const classes = [
   "rf-cell",
 ];
 
-function layoutDirectives() {
+function markdownRules() {
   return (tree: Root) => {
+    const definitions = new Map<string, string>();
+    visit(tree, "definition", (node) => {
+      definitions.set(node.identifier, node.url);
+    });
     visit(tree, (node, _index, parent) => {
+      if (node.type === "image" || node.type === "imageReference") {
+        const source =
+          node.type === "image" ? node.url : definitions.get(node.identifier);
+        if (source === undefined) return;
+        const url = URL.canParse(source) ? new URL(source) : null;
+        if (
+          !url ||
+          !["http:", "https:"].includes(url.protocol) ||
+          url.username ||
+          url.password
+        )
+          throw new InvalidMarkdownError(
+            "图片只支持完整的 HTTP(S) URL",
+            node.position?.start.line,
+          );
+        return;
+      }
       if (
         !["containerDirective", "leafDirective", "textDirective"].includes(
           node.type,
@@ -86,7 +107,7 @@ const processor = unified()
   .use(remarkParse)
   .use(remarkGfm)
   .use(remarkDirective)
-  .use(layoutDirectives)
+  .use(markdownRules)
   .use(remarkRehype)
   .use(rehypeSanitize, {
     ...defaultSchema,

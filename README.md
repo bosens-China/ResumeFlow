@@ -37,4 +37,6 @@ CI 在 `main` 推送和 `v*` 标签推送时，先检查代码并启动容器验
 
 Markdown 支持普通语法，以及 `:::left`、`:::center`、`:::right` 和外层 `::::row` 内的两个或三个 `:::cell`。无效指令在保存时返回 HTTP 400。网页通过 Paged.js 即时生成多页 HTML 预览；服务端 Playwright 运行相同分页脚本生成 PDF。导出使用已保存的最新版本。
 
+Markdown 图片只支持完整的 HTTP(S) URL；`./image.png`、`/image.png` 等相对路径会在预览和保存时提示错误。PDF 导出限制单张图片不超过 5 MB，并拒绝私网地址；图片无法加载时会提示导出失败。
+
 产品需求见 [docs/work/initial-release/PRD.md](docs/work/initial-release/PRD.md)。

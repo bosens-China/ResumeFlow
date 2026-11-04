@@ -3,8 +3,6 @@ import { lookup } from "node:dns/promises";
 import http from "node:http";
 import https from "node:https";
 import { BlockList, isIP } from "node:net";
-import { readFile, realpath, stat } from "node:fs/promises";
-import { extname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Resume } from "@resumeflow/shared";
 import { resumePageCss } from "@resumeflow/shared/resume-css";
@@ -50,49 +48,13 @@ for (const [address, prefix] of [
 ] as const)
   blockedAddresses.addSubnet(address, prefix, "ipv6");
 
-async function imageResponse(url: URL, baseUrl: string) {
+async function imageResponse(url: URL) {
   if (
     !["http:", "https:"].includes(url.protocol) ||
     url.username ||
     url.password
   )
     throw new Error("不支持的图片地址");
-  const local = url.origin === baseUrl;
-  if (local) {
-    const root = fileURLToPath(
-      new URL(
-        process.env.NODE_ENV === "production"
-          ? "../../web/dist/"
-          : "../../web/public/",
-        import.meta.url,
-      ),
-    );
-    const file = await realpath(
-      resolve(root, `.${decodeURIComponent(url.pathname)}`),
-    );
-    const inside = relative(root, file);
-    if (
-      !inside ||
-      inside === ".." ||
-      inside.startsWith(`..${sep}`) ||
-      isAbsolute(inside)
-    )
-      throw new Error("本机图片地址不允许访问");
-    const contentType = (
-      {
-        ".png": "image/png",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".webp": "image/webp",
-        ".gif": "image/gif",
-        ".avif": "image/avif",
-        ".svg": "image/svg+xml",
-      } as Record<string, string>
-    )[extname(file).toLowerCase()];
-    if (!contentType || (await stat(file)).size > 5_000_000)
-      throw new Error("图片格式不受支持或超过 5 MB");
-    return { body: await readFile(file), contentType };
-  }
   const addresses = await lookup(url.hostname, { all: true });
   const target = addresses.find(
     ({ address, family }) =>
@@ -166,12 +128,11 @@ function escapeHtml(value: string) {
   );
 }
 
-export function resumeHtml(resume: Resume, baseUrl: string) {
+export function resumeHtml(resume: Resume) {
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <base href="${baseUrl}/">
   <title>${escapeHtml(resume.title)}</title>
   <style>${resumePageCss}</style>
 </head>
@@ -179,10 +140,7 @@ export function resumeHtml(resume: Resume, baseUrl: string) {
 </html>`;
 }
 
-export async function resumePdf(
-  resume: Resume,
-  baseUrl: string,
-): Promise<Buffer> {
+export async function resumePdf(resume: Resume): Promise<Buffer> {
   const page = await (
     await browser()
   ).newPage({ viewport: { width: 794, height: 1123 } });
@@ -191,17 +149,14 @@ export async function resumePdf(
     await page.route("**/*", async (route) => {
       if (route.request().resourceType() !== "image") return route.abort();
       try {
-        const image = await imageResponse(
-          new URL(route.request().url()),
-          baseUrl,
-        );
+        const image = await imageResponse(new URL(route.request().url()));
         await route.fulfill(image);
       } catch (error) {
         imageErrors.push(String(error));
         await route.abort();
       }
     });
-    await page.setContent(resumeHtml(resume, baseUrl), { waitUntil: "load" });
+    await page.setContent(resumeHtml(resume), { waitUntil: "load" });
     if (imageErrors.length) throw new Error(imageErrors.join("；"));
     await page.evaluate(() => {
       (

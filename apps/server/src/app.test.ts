@@ -46,6 +46,22 @@ test("layout directives render as safe HTML and reject unsupported syntax", () =
     InvalidMarkdownError,
   );
   assert.doesNotMatch(renderMarkdown("<script>alert(1)</script>"), /<script>/);
+  assert.match(
+    renderMarkdown("![图](https://example.com/image.png)"),
+    /<img src="https:\/\/example.com\/image.png"/,
+  );
+  assert.throws(
+    () => renderMarkdown("正文\n![图](/image.png)"),
+    (error) => error instanceof InvalidMarkdownError && error.line === 2,
+  );
+  assert.throws(
+    () => renderMarkdown("![图](./image.png)"),
+    InvalidMarkdownError,
+  );
+  assert.throws(
+    () => renderMarkdown("![图][本地]\n\n[本地]: /image.png"),
+    InvalidMarkdownError,
+  );
 });
 
 test("REST and MCP share committed resume state", async () => {
@@ -112,6 +128,12 @@ test("REST and MCP share committed resume state", async () => {
       body: JSON.stringify({ markdown: ":::unknown\n文字\n:::" }),
     });
     assert.equal(invalidResponse.status, 400);
+    const relativeImage = await app.request("http://localhost/api/resumes", {
+      method: "POST",
+      headers: { Host: "localhost", "Content-Type": "application/json" },
+      body: JSON.stringify({ markdown: "![图](/image.png)" }),
+    });
+    assert.equal(relativeImage.status, 400);
     assert.equal(store.list().length, 1);
 
     const duplicate = await app.request(
@@ -205,20 +227,13 @@ test("PDF endpoint returns a real PDF for the saved revision", async () => {
   }
 });
 
-test("PDF includes same-origin images and rejects private remote addresses", async () => {
-  const baseUrl = "http://127.0.0.1:10127";
+test("PDF rejects private image addresses", async () => {
   const store = createStore(":memory:");
   try {
-    const pdf = await resumePdf(
-      store.create("图片测试", "![图标](/favicon.svg)"),
-      baseUrl,
-    );
-    assert.equal(pdf.toString("latin1", 0, 5), "%PDF-");
     await assert.rejects(
       () =>
         resumePdf(
           store.create("禁止私网", "![头像](http://127.0.0.1:9999/image.png)"),
-          baseUrl,
         ),
       /图片地址不允许访问/,
     );
