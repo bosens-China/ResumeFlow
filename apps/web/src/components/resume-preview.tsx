@@ -223,13 +223,15 @@ export function ResumePreview({
                 title="简历分页预览"
                 srcDoc={frame.doc}
                 sandbox="allow-scripts"
+                aria-hidden={activeIndex !== index}
                 className="absolute left-0 top-0 border-0"
                 style={{
                   width: PAGE_WIDTH,
                   height: frame.height,
                   transform: `scale(${scale})`,
                   transformOrigin: "top left",
-                  visibility: activeIndex === index ? "visible" : "hidden",
+                  opacity: activeIndex === index ? 1 : 0,
+                  pointerEvents: activeIndex === index ? "auto" : "none",
                 }}
               />
             ),
