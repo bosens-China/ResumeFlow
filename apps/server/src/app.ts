@@ -197,17 +197,21 @@ export function createApp(store = createStore()) {
           )
         : c.json({ error: "简历不存在" }, 404);
     })
-    .delete("/api/resumes/:id", (c) => {
-      const revision = Number(c.req.query("revision"));
-      if (!Number.isSafeInteger(revision) || revision < 1)
-        return c.json({ error: "缺少有效 revision" }, 400);
-      const result = store.delete(c.req.param("id"), revision);
-      if (result.status === "not_found")
-        return c.json({ error: "简历不存在" }, 404);
-      if (result.status === "conflict")
-        return c.json({ error: "版本冲突", current: result.current }, 409);
-      return c.body(null, 204);
-    })
+    .delete(
+      "/api/resumes/:id",
+      validator("query", (query) => query),
+      (c) => {
+        const revision = Number(c.req.query("revision"));
+        if (!Number.isSafeInteger(revision) || revision < 1)
+          return c.json({ error: "缺少有效 revision" }, 400);
+        const result = store.delete(c.req.param("id"), revision);
+        if (result.status === "not_found")
+          return c.json({ error: "简历不存在" }, 404);
+        if (result.status === "conflict")
+          return c.json({ error: "版本冲突", current: result.current }, 409);
+        return c.body(null, 204);
+      },
+    )
     .get("/api/events", (c) =>
       streamSSE(c, async (stream) => {
         await new Promise<void>((resolve) => {
@@ -227,29 +231,33 @@ export function createApp(store = createStore()) {
         });
       }),
     )
-    .get("/api/resumes/:id/pdf", async (c) => {
-      const resume = store.get(c.req.param("id"));
-      if (!resume) return c.json({ error: "简历不存在" }, 404);
-      const requested = c.req.query("revision");
-      if (requested && requested !== String(resume.revision))
-        return c.json({ error: "版本冲突", current: resume }, 409);
-      try {
-        const pdf = await resumePdf(resume);
-        const disposition =
-          c.req.query("download") === "1"
-            ? `attachment; filename="resume.pdf"; filename*=UTF-8''${encodeURIComponent(resume.title)}.pdf`
-            : 'inline; filename="resume.pdf"';
-        return c.body(new Uint8Array(pdf), 200, {
-          "Content-Type": "application/pdf",
-          "Content-Disposition": disposition,
-          "Cache-Control": "no-store",
-          "X-Resume-Revision": String(resume.revision),
-        });
-      } catch (error) {
-        console.error("PDF generation failed", error);
-        return c.json({ error: "PDF 生成失败" }, 500);
-      }
-    })
+    .get(
+      "/api/resumes/:id/pdf",
+      validator("query", (query) => query),
+      async (c) => {
+        const resume = store.get(c.req.param("id"));
+        if (!resume) return c.json({ error: "简历不存在" }, 404);
+        const requested = c.req.query("revision");
+        if (requested && requested !== String(resume.revision))
+          return c.json({ error: "版本冲突", current: resume }, 409);
+        try {
+          const pdf = await resumePdf(resume);
+          const disposition =
+            c.req.query("download") === "1"
+              ? `attachment; filename="resume.pdf"; filename*=UTF-8''${encodeURIComponent(resume.title)}.pdf`
+              : 'inline; filename="resume.pdf"';
+          return c.body(new Uint8Array(pdf), 200, {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": disposition,
+            "Cache-Control": "no-store",
+            "X-Resume-Revision": String(resume.revision),
+          });
+        } catch (error) {
+          console.error("PDF generation failed", error);
+          return c.json({ error: "PDF 生成失败" }, 500);
+        }
+      },
+    )
     .all("/mcp", (c: Context) =>
       handler.fetch(c.req.raw, { parsedBody: c.get("parsedBody") }),
     );

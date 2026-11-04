@@ -11,6 +11,7 @@ import { AutoResizeTitleInput } from "@/components/auto-resize-title-input";
 import { ResumePreview } from "@/components/resume-preview";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { api } from "@/lib/api";
 import {
   ApiError,
   DEFAULT_RESUME_NAME,
@@ -200,9 +201,10 @@ function ResumeDetailPage() {
     setExporting(true);
     setExportError("");
     try {
-      const response = await fetch(
-        `/api/resumes/${resume.id}/pdf?revision=${committed.current.revision}`,
-      );
+      const response = await api.api.resumes[":id"].pdf.$get({
+        param: { id: resume.id },
+        query: { revision: String(committed.current.revision) },
+      });
       if (!response.ok)
         throw new Error(((await response.json()) as { error: string }).error);
       const url = URL.createObjectURL(await response.blob());
