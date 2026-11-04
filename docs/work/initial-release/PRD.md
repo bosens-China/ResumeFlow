@@ -20,7 +20,7 @@
 - 使用 monorepo 组织现有 React、TypeScript、Vite 前端与 Hono 后端，前端 UI 使用 shadcn/ui。
 - 首版以单用户本机 Docker 容器交付；简历数据保存在 SQLite，并通过 Docker 数据卷持久化。容器重建后保留数据。
 - 开发环境直接启动 Vite Web 与 Hono Server 的 dev 服务，分别支持源码热重载；不使用 Docker 开发热重载。生产镜像由 Hono 提供已构建的前端 dist。
-- GitHub Actions 在 PR 上运行检查与容器冒烟测试；`main` 与版本标签通过验证后，将 `linux/amd64`、`linux/arm64` 镜像发布为 `boses/resumeflow`。发布任务从仓库的 `production` Environment Secret 读取 Docker Hub 凭据。
+- GitHub Actions 在 PR 上运行检查与容器冒烟测试；`main` 与版本标签通过验证后，将 `linux/amd64`（x86-64）镜像发布为 `boses/resumeflow`。发布任务从仓库的 `production` Environment Secret 读取 Docker Hub 凭据。
 - Hono 提供网页所需的数据接口、SSE 变更通知和 MCP 入口。网页与 MCP 调用同一套读写逻辑，以已提交的数据为准。
 - MCP 使用 Streamable HTTP，通过本机地址连接；Agent 对已提交数据的后续查询返回最新状态。MCP 修改名称或正文后，已打开的网页编辑器和分页预览自动更新。
 

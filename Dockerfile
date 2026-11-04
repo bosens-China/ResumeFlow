@@ -1,4 +1,4 @@
-FROM node:24-bookworm-slim AS build
+FROM node:24.22.2-bookworm-slim AS build
 
 WORKDIR /app
 RUN npm install -g pnpm@11.17.0
@@ -6,7 +6,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile && pnpm build \
     && pnpm --filter @resumeflow/server deploy --prod --legacy /runtime
 
-FROM node:24-bookworm-slim
+FROM node:24.22.2-bookworm-slim
 
 WORKDIR /app
 ENV NODE_ENV=production \

@@ -5,17 +5,17 @@
 ## Docker 运行
 
 ```sh
-docker build -t resumeflow .
+docker build --platform linux/amd64 -t resumeflow .
 docker run --rm -p 127.0.0.1:3000:3000 -v resumeflow-data:/data resumeflow
 ```
 
 打开 <http://127.0.0.1:3000>。重新创建容器时沿用 `resumeflow-data` 数据卷。
 
-CI 在 `main` 推送和 `v*` 标签推送时，先检查代码并启动容器验证，再发布 `linux/amd64` 和 `linux/arm64` 镜像到 `boses/resumeflow`。先在 Docker Hub 建立该仓库；在 GitHub 仓库创建名为 `production` 的 Environment，并在其中设置 `DOCKERHUB_TOKEN` Secret。PR 只验证，不发布。镜像发布后也可用 `boses/resumeflow:latest` 替代上面的本地镜像。
+CI 在 `main` 推送和 `v*` 标签推送时，先检查代码并启动容器验证，再发布 `linux/amd64`（x86-64）镜像到 `boses/resumeflow`。先在 Docker Hub 建立该仓库；在 GitHub 仓库创建名为 `production` 的 Environment，并在其中设置 `DOCKERHUB_TOKEN` Secret。PR 只验证，不发布。镜像发布后也可用 `boses/resumeflow:latest` 替代上面的本地镜像。
 
 ## 本地开发
 
-需要 Node.js 24 和 pnpm 11。运行 `pnpm install`、`pnpm dev`，同时启动 Vite 网页和 Hono 服务；也可分别运行 `pnpm dev:web`、`pnpm dev:server`。网页在 <http://localhost:10128>，API 和 MCP 在 <http://localhost:10127>。本机还需运行 `pnpm --filter @resumeflow/server exec playwright install chromium` 才能生成 PDF。开发模式不读取前端 dist，前端请求经 Vite 代理到 Hono。
+需要 Node.js 24 和 pnpm 11；Docker 与 CI 固定使用 Node.js 24.22.2。服务端以 ES2025 为 TypeScript 目标，浏览器和共享代码仍使用现有兼容基线；TypeScript 类型声明不提供运行时 polyfill。运行 `pnpm install`、`pnpm dev`，同时启动 Vite 网页和 Hono 服务；也可分别运行 `pnpm dev:web`、`pnpm dev:server`。网页在 <http://localhost:10128>，API 和 MCP 在 <http://localhost:10127>。本机还需运行 `pnpm --filter @resumeflow/server exec playwright install chromium` 才能生成 PDF。开发模式不读取前端 dist，前端请求经 Vite 代理到 Hono。
 
 端口、SQLite 路径和 MCP PDF 下载地址的可选环境变量见 [.env.example](.env.example)。
 

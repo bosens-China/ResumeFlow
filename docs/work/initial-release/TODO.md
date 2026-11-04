@@ -11,4 +11,7 @@
 - [x] 开发模式直接运行 Web/Server dev，生产模式由 Hono 托管前端 dist。
 - [x] 增加 GitHub Actions 检查、容器冒烟测试和 Docker Hub 发布配置，并在本机验证 YAML 与容器行为。
 - [x] 验证 SSE 连接存在时容器可及时停止，并补充必要的环境配置示例。
-- [ ] 仓库推送到 GitHub 并在 `production` Environment 配置 `DOCKERHUB_TOKEN` 后，确认远端 CI 与 Docker Hub 发布成功。
+- [x] 确认远端 CI 与 Docker Hub 发布成功。
+- [x] 修复 SSE 重连时漏同步和副本名称超长，补充 MCP 与网页回归测试。
+- [ ] 验证固定 Node 版本的 linux/amd64 Docker 镜像及完整首版浏览器验收。
+- [ ] 推送后验证 linux/amd64 镜像发布流程。
