@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "modernize-ecmascript": {
+      "source": "bosens-China/tc39-atlas",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/modernize-ecmascript/SKILL.md",
+      "computedHash": "c7a413a769d19a3079886ccf03b22ccf25f135344f338c24e3dd35357f5cef3c"
+    }
+  }
+}

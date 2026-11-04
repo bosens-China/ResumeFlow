@@ -1,0 +1,31 @@
+{
+  "name": "resumeflow",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@11.17.0",
+  "scripts": {
+    "dev": "pnpm --filter @resumeflow/shared build && pnpm -r --parallel --filter @resumeflow/web --filter @resumeflow/server dev",
+    "dev:web": "pnpm --filter @resumeflow/shared build && pnpm --filter @resumeflow/web dev",
+    "dev:server": "pnpm --filter @resumeflow/shared build && pnpm --filter @resumeflow/server dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "oxlint",
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "oxlint",
+      "prettier --write"
+    ],
+    "*.{json,jsonc,css,html,md,yaml,yml}": "prettier --write"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "oxlint": "^1.89.0",
+    "prettier": "3.9.10",
+    "typescript": "~7.0.2"
+  }
+}
