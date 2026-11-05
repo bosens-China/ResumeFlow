@@ -1,5 +1,5 @@
 import type { Resume } from "@resumeflow/shared";
-import { api } from "@/lib/api";
+import { api } from "./api";
 
 const LEGACY_KEY = "resumeflow:resumes";
 const IMPORTED_KEY = "resumeflow:imported-legacy-ids";
@@ -15,7 +15,7 @@ export class ApiError extends Error {
   }
 }
 
-async function throwApiError(response: {
+export async function throwApiError(response: {
   status: number;
   json: () => Promise<unknown>;
 }): Promise<never> {
@@ -60,7 +60,16 @@ export async function createResume(
 export async function updateResume(
   id: string,
   revision: number,
-  patch: { title?: string; markdown?: string },
+  patch: {
+    title?: string;
+    markdown?: string;
+    themeColor?: string;
+    margin?: string;
+    customCss?: string;
+    currentLanguage?: string;
+    languages?: Record<string, { title?: string; markdown: string }>;
+    language?: string;
+  },
 ) {
   const response = await api.api.resumes[":id"].$patch({
     param: { id },

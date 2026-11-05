@@ -70,10 +70,19 @@ test("MCP exposes the same resume operations and revision protection", async () 
           revision: copy.revision,
           title: copy.title,
           markdown: "# 更新",
+          themeColor: "#2563eb",
+          margin: "12mm 15mm",
+          customCss: ".rf-h2 { font-size: 14pt; }",
+          language: "en",
         })
       ).content[0]!.text,
     ) as Resume;
-    assert.equal(updated.markdown, "# 更新");
+    assert.equal(updated.themeColor, "#2563eb");
+    assert.equal(updated.margin, "12mm 15mm");
+    assert.equal(updated.customCss, ".rf-h2 { font-size: 14pt; }");
+    assert.equal(updated.languages?.en?.markdown, "# 更新");
+    assert.equal(updated.markdown, copy.markdown);
+    assert.equal(updated.currentLanguage, copy.currentLanguage);
     assert.equal(
       (
         await call("update_resume", {
@@ -88,6 +97,16 @@ test("MCP exposes the same resume operations and revision protection", async () 
       (await call("get_resume", { id: copy.id })).content[0]!.text,
     ) as Resume;
     assert.equal(fetched.revision, updated.revision);
+    assert.equal(fetched.themeColor, "#2563eb");
+    const exportedEn = JSON.parse(
+      (
+        await call("export_resume_pdf", {
+          id: copy.id,
+          language: "en",
+        })
+      ).content[0]!.text,
+    ) as { url: string; revision: number };
+    assert.match(exportedEn.url, /lang=en/);
     const exported = JSON.parse(
       (await call("export_resume_pdf", { id: copy.id })).content[0]!.text,
     ) as { url: string; revision: number };

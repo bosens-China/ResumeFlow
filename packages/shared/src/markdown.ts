@@ -5,7 +5,10 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkDirective from "remark-directive";
 import remarkRehype from "remark-rehype";
-import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import rehypeSanitize, {
+  defaultSchema,
+  type Options as SanitizeOptions,
+} from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
 
 export class InvalidMarkdownError extends Error {
@@ -17,15 +20,18 @@ export class InvalidMarkdownError extends Error {
   }
 }
 
-const classes = [
-  "rf-left",
-  "rf-center",
-  "rf-right",
-  "rf-row",
-  "rf-row-2",
-  "rf-row-3",
-  "rf-cell",
-];
+function addClass(node: unknown, cls: string) {
+  const target = node as { data?: Record<string, unknown> };
+  const data = target.data ?? (target.data = {});
+  const hProperties = (data.hProperties ?? (data.hProperties = {})) as Record<
+    string,
+    unknown
+  >;
+  const existing = Array.isArray(hProperties.className)
+    ? hProperties.className
+    : [];
+  hProperties.className = [...existing, cls];
+}
 
 function markdownRules() {
   return (tree: Root) => {
@@ -50,6 +56,28 @@ function markdownRules() {
             node.position?.start.line,
           );
         return;
+      }
+      if (node.type === "heading") {
+        addClass(node, `rf-h${(node as { depth: number }).depth}`);
+      } else if (node.type === "paragraph") {
+        addClass(node, "rf-p");
+      } else if (node.type === "list") {
+        addClass(
+          node,
+          (node as { ordered?: boolean }).ordered ? "rf-ol" : "rf-ul",
+        );
+      } else if (node.type === "listItem") {
+        addClass(node, "rf-li");
+      } else if (node.type === "link") {
+        addClass(node, "rf-link");
+      } else if (node.type === "blockquote") {
+        addClass(node, "rf-blockquote");
+      } else if (node.type === "table") {
+        addClass(node, "rf-table");
+      } else if (node.type === "thematicBreak") {
+        addClass(node, "rf-hr");
+      } else if (node.type === "code" || node.type === "inlineCode") {
+        addClass(node, "rf-code");
       }
       if (
         !["containerDirective", "leafDirective", "textDirective"].includes(
@@ -103,6 +131,26 @@ function markdownRules() {
   };
 }
 
+const allowRfRegex = /^rf-[a-z0-9_-]+$/;
+const schemaAttributes = structuredClone(
+  defaultSchema.attributes ?? {},
+) as NonNullable<SanitizeOptions["attributes"]>;
+
+for (const attrs of Object.values(schemaAttributes)) {
+  if (!Array.isArray(attrs)) continue;
+  const classDef = attrs.find(
+    (a): a is [string, ...(string | RegExp)[]] =>
+      Array.isArray(a) && a[0] === "className",
+  );
+  if (classDef) {
+    classDef.push(allowRfRegex);
+  } else {
+    attrs.push(["className", allowRfRegex]);
+  }
+}
+if (!schemaAttributes["*"]) schemaAttributes["*"] = [];
+schemaAttributes["*"].push(["className", allowRfRegex]);
+
 const processor = unified()
   .use(remarkParse)
   .use(remarkGfm)
@@ -111,13 +159,43 @@ const processor = unified()
   .use(remarkRehype)
   .use(rehypeSanitize, {
     ...defaultSchema,
-    attributes: {
-      ...defaultSchema.attributes,
-      div: [["className", ...classes]],
-    },
+    attributes: schemaAttributes,
   })
   .use(rehypeStringify);
 
 export function renderMarkdown(markdown: string): string {
-  return String(processor.processSync(markdown));
+  const html = String(processor.processSync(markdown));
+  return `<div class="rf-root">${html}</div>`;
+}
+
+/** 基于 Markdown 内容与排版规则智能预估 A4 纸张页数 */
+export function estimateResumePageCount(
+  markdown: string,
+  _margin?: string,
+): number {
+  if (!markdown || !markdown.trim()) return 1;
+  const lines = markdown.split("\n");
+  let totalHeightMm = 0;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      totalHeightMm += 3;
+    } else if (line.startsWith("# ")) {
+      totalHeightMm += 16;
+    } else if (line.startsWith("## ")) {
+      totalHeightMm += 15;
+    } else if (line.startsWith("### ")) {
+      totalHeightMm += 9;
+    } else if (line.startsWith("- ") || line.startsWith("* ")) {
+      const wrapped = Math.max(1, Math.ceil(line.length / 45));
+      totalHeightMm += wrapped * 6.5;
+    } else if (line.startsWith("::::") || line.startsWith(":::")) {
+      totalHeightMm += 0.5;
+    } else {
+      const wrapped = Math.max(1, Math.ceil(line.length / 50));
+      totalHeightMm += wrapped * 6.5;
+    }
+  }
+  const pageHeightMm = 255;
+  return Math.max(1, Math.ceil(totalHeightMm / pageHeightMm));
 }

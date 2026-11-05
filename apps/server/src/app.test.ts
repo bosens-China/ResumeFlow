@@ -25,6 +25,12 @@ test("SQLite survives reopen and rejects stale revisions", () => {
     assert.deepEqual(store.get(created.id), {
       ...created,
       title: "新名称",
+      languages: {
+        zh: {
+          title: "新名称",
+          markdown: "# 简历",
+        },
+      },
       revision: 2,
       updatedAt: store.get(created.id)!.updatedAt,
     });
@@ -38,6 +44,7 @@ test("layout directives render as safe HTML and reject unsupported syntax", () =
   const html = renderMarkdown(
     "::::row\n:::cell\n**左**\n:::\n:::cell\n右\n:::\n::::",
   );
+  assert.match(html, /class="rf-root"/);
   assert.match(html, /rf-row-2/);
   assert.match(html, /<strong>左<\/strong>/);
   assert.match(html, /rf-cell/);
@@ -62,6 +69,19 @@ test("layout directives render as safe HTML and reject unsupported syntax", () =
     () => renderMarkdown("![图][本地]\n\n[本地]: /image.png"),
     InvalidMarkdownError,
   );
+});
+
+test("markdown outputs root class and element classes for custom styling", () => {
+  const html = renderMarkdown(
+    "# 大标题\n\n## 章节标题\n\n正文段落\n\n- 列表项\n\n[链接](https://example.com)",
+  );
+  assert.match(html, /class="rf-root"/);
+  assert.match(html, /<h1 class="rf-h1">大标题<\/h1>/);
+  assert.match(html, /<h2 class="rf-h2">章节标题<\/h2>/);
+  assert.match(html, /<p class="rf-p">/);
+  assert.match(html, /<ul class="rf-ul">/);
+  assert.match(html, /<li class="rf-li">/);
+  assert.match(html, /<a href="https:\/\/example\.com" class="rf-link">/);
 });
 
 test("REST and MCP share committed resume state", async () => {
@@ -196,11 +216,16 @@ test("PDF endpoint returns a real PDF for the saved revision", async () => {
   try {
     const resume = store.create("PDF 测试", "# 测试简历");
     const response = await createApp(store).request(
-      `http://localhost/api/resumes/${resume.id}/pdf?revision=1`,
+      `http://localhost/api/resumes/${resume.id}/pdf?revision=1&download=1`,
       { headers: { Host: "localhost" } },
     );
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("content-type"), "application/pdf");
+    assert.ok(
+      response.headers
+        .get("content-disposition")
+        ?.endsWith(encodeURIComponent("PDF 测试.pdf")),
+    );
     const bytes = new Uint8Array(await response.arrayBuffer());
     assert.equal(new TextDecoder().decode(bytes.slice(0, 5)), "%PDF-");
 

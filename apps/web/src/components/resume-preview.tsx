@@ -4,9 +4,9 @@ import {
   InvalidMarkdownError,
   renderMarkdown,
 } from "@resumeflow/shared/markdown";
-import { resumePageCss } from "@resumeflow/shared/resume-css";
+import { getResumePageCss } from "@resumeflow/shared/resume-css";
 
-const PAGE_WIDTH = 794;
+const PAGE_WIDTH = 816;
 
 interface Parsed {
   html: string;
@@ -33,12 +33,28 @@ function parse(content: string): Parsed {
   }
 }
 
-function previewDocument(html: string, id: number) {
+function previewDocument(
+  html: string,
+  id: number,
+  styles?: { themeColor?: string; margin?: string; customCss?: string },
+) {
+  const pageCss = getResumePageCss(styles);
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<style>${resumePageCss}</style>
-<style media="screen">body { background:#f4f4f5; } .pagedjs_page { margin:0 0 20px; background:#fff; box-shadow:0 4px 16px #0002; }</style>
+<style>${pageCss}</style>
+<style media="screen">
+  html, body { overflow: hidden; margin: 0; padding: 0; background: transparent; }
+  .pagedjs_pages { display: flex; flex-direction: column; align-items: center; padding: 0 0 24px; }
+  .pagedjs_page {
+    margin: 0 auto 28px;
+    background: #ffffff;
+    box-sizing: border-box;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 2px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 8px 16px -4px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  }
+</style>
 <script>window.PagedConfig={auto:false};</script><script src="/api/pagedjs.js"></script>
-</head><body><main id="source">${html}</main><div id="pages"></div>
+</head><body class="rf-root"><main id="source" class="rf-root">${html}</main><div id="pages"></div>
 <script>(async()=>{
   const source=document.querySelector('#source'); const content=source.innerHTML; source.remove();
   await document.fonts.ready;
@@ -49,22 +65,40 @@ function previewDocument(html: string, id: number) {
 </body></html>`;
 }
 
+export interface PreviewStatus {
+  pages: number;
+  ready: boolean;
+  error: string;
+}
+
 export function ResumePreview({
   content,
-  revision,
+  themeColor,
+  margin,
+  customCss,
   onReadyChange,
+  onStatusChange,
 }: {
   content: string;
-  revision: number;
+  themeColor?: string;
+  margin?: string;
+  customCss?: string;
   onReadyChange: (content: string | null) => void;
+  onStatusChange?: (status: PreviewStatus) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const iframe = useRef<(HTMLIFrameElement | null)[]>([null, null]);
   const active = useRef(0);
   const requestId = useRef(0);
   const completedId = useRef(0);
-  const generation = useRef({ html: "", content: "", retry: 0 });
-  const [scale, setScale] = useState(1);
+  const generation = useRef({
+    html: "",
+    content: "",
+    retry: 0,
+    themeColor,
+    margin,
+    customCss,
+  });
   const [retry, setRetry] = useState(0);
   const parsed = useMemo(() => parse(content), [content]);
   const [frames, setFrames] = useState<[Frame | null, Frame | null]>([
@@ -79,20 +113,16 @@ export function ResumePreview({
   } | null>(null);
 
   useEffect(() => {
-    const el = container.current;
-    if (!el) return;
-    const resize = () =>
-      setScale(Math.min(1, Math.max(0.3, (el.clientWidth - 48) / PAGE_WIDTH)));
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
     onReadyChange(null);
     const id = ++requestId.current;
-    generation.current = { html: parsed.html, content, retry };
+    generation.current = {
+      html: parsed.html,
+      content,
+      retry,
+      themeColor,
+      margin,
+      customCss,
+    };
     if (parsed.error) return;
     const timer = setTimeout(() => {
       const index = 1 - active.current;
@@ -102,7 +132,11 @@ export function ResumePreview({
           id,
           source: parsed.html,
           retry,
-          doc: previewDocument(parsed.html, id),
+          doc: previewDocument(parsed.html, id, {
+            themeColor,
+            margin,
+            customCss,
+          }),
           height: 1123,
           pages: 0,
         };
@@ -121,7 +155,16 @@ export function ResumePreview({
       clearTimeout(timer);
       clearTimeout(timeout);
     };
-  }, [content, parsed.html, parsed.error, retry, onReadyChange]);
+  }, [
+    content,
+    parsed.html,
+    parsed.error,
+    retry,
+    themeColor,
+    margin,
+    customCss,
+    onReadyChange,
+  ]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -175,6 +218,15 @@ export function ResumePreview({
     visible?.source === parsed.html &&
     visible.retry === retry &&
     !!visible.pages;
+
+  useEffect(() => {
+    onStatusChange?.({
+      pages: visible?.pages ?? 0,
+      ready,
+      error: parsed.error || previewError,
+    });
+  }, [visible?.pages, ready, parsed.error, previewError, onStatusChange]);
+
   return (
     <div
       ref={container}
@@ -198,18 +250,11 @@ export function ResumePreview({
           )}
         </div>
       )}
-      <div className="mx-auto mb-2 w-fit text-xs text-muted-foreground">
-        {parsed.error || previewError
-          ? "分页预览失败"
-          : ready
-            ? `${visible.pages} 页 · 已保存版本 ${revision} · 输入实时预览`
-            : "正在生成分页预览…"}
-      </div>
       <div
         className="relative mx-auto"
         style={{
-          width: PAGE_WIDTH * scale,
-          height: (visible?.height ?? 1123) * scale,
+          width: PAGE_WIDTH,
+          height: visible?.height ?? 1123,
         }}
       >
         {frames.map(
@@ -228,8 +273,6 @@ export function ResumePreview({
                 style={{
                   width: PAGE_WIDTH,
                   height: frame.height,
-                  transform: `scale(${scale})`,
-                  transformOrigin: "top left",
                   opacity: activeIndex === index ? 1 : 0,
                   pointerEvents: activeIndex === index ? "auto" : "none",
                 }}

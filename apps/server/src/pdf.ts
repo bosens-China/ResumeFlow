@@ -5,7 +5,7 @@ import https from "node:https";
 import { BlockList, isIP } from "node:net";
 import { fileURLToPath } from "node:url";
 import type { Resume } from "@resumeflow/shared";
-import { resumePageCss } from "@resumeflow/shared/resume-css";
+import { getResumePageCss } from "@resumeflow/shared/resume-css";
 import { renderMarkdown } from "./markdown.ts";
 
 export const pagedScriptPath = fileURLToPath(
@@ -128,19 +128,33 @@ function escapeHtml(value: string) {
   );
 }
 
-export function resumeHtml(resume: Resume) {
+export function resumeHtml(resume: Resume, language?: string) {
+  const targetLang = language || resume.currentLanguage;
+  const langItem =
+    targetLang && resume.languages ? resume.languages[targetLang] : undefined;
+  const title = langItem?.title || resume.title;
+  const markdown = langItem?.markdown ?? resume.markdown;
+  const styleCss = getResumePageCss({
+    themeColor: resume.themeColor,
+    margin: resume.margin,
+    customCss: resume.customCss,
+  });
+
   return `<!doctype html>
-<html lang="zh-CN">
+<html lang="${targetLang === "en" ? "en" : "zh-CN"}">
 <head>
   <meta charset="utf-8">
-  <title>${escapeHtml(resume.title)}</title>
-  <style>${resumePageCss}</style>
+  <title>${escapeHtml(title)}</title>
+  <style>${styleCss}</style>
 </head>
-<body><main id="source">${renderMarkdown(resume.markdown)}</main><div id="pages"></div></body>
+<body class="rf-root"><main id="source" class="rf-root">${renderMarkdown(markdown)}</main><div id="pages"></div></body>
 </html>`;
 }
 
-export async function resumePdf(resume: Resume): Promise<Buffer> {
+export async function resumePdf(
+  resume: Resume,
+  language?: string,
+): Promise<Buffer> {
   const page = await (
     await browser()
   ).newPage({ viewport: { width: 794, height: 1123 } });
@@ -156,7 +170,7 @@ export async function resumePdf(resume: Resume): Promise<Buffer> {
         await route.abort();
       }
     });
-    await page.setContent(resumeHtml(resume), { waitUntil: "load" });
+    await page.setContent(resumeHtml(resume, language), { waitUntil: "load" });
     if (imageErrors.length) throw new Error(imageErrors.join("；"));
     await page.evaluate(() => {
       (

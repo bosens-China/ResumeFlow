@@ -127,4 +127,139 @@
   html {
     @apply font-sans;
   }
+  button,
+  [role="button"],
+  a {
+    cursor: pointer;
+  }
+}
+
+/* 简历卡片真实微缩渲染（保证无缩放字体与主题色一致） */
+.rf-thumbnail-paper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #ffffff;
+  border-radius: 2px;
+}
+
+.rf-thumbnail-content {
+  width: 300%;
+  transform: scale(0.33333333);
+  transform-origin: top left;
+  padding: 16px 20px;
+  font-family: inherit;
+  color: #1f2937;
+  line-height: 1.4;
+  word-break: break-word;
+  pointer-events: none;
+  user-select: none;
+}
+
+.rf-thumbnail-content .rf-h1 {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 3px 0;
+  color: #111827;
+}
+
+.rf-thumbnail-content .rf-center {
+  text-align: center;
+}
+
+.rf-thumbnail-content .rf-right {
+  text-align: right;
+}
+
+.rf-thumbnail-content .rf-left {
+  text-align: left;
+}
+
+.rf-thumbnail-content .rf-h2 {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 6px 0 2.5px 0;
+  padding-bottom: 1.5px;
+  border-bottom: 1.5px solid var(--rf-preview-theme, #111827);
+  color: var(--rf-preview-theme, #111827);
+}
+
+.rf-thumbnail-content .rf-h3 {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 3px 0 1.5px 0;
+  color: #1f2937;
+}
+
+.rf-thumbnail-content .rf-p {
+  margin: 1px 0;
+  font-size: 10px;
+  color: #4b5563;
+}
+
+.rf-thumbnail-content .rf-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.rf-thumbnail-content .rf-row-2 .rf-cell:last-child,
+.rf-thumbnail-content .rf-row-3 .rf-cell:last-child {
+  text-align: right;
+}
+
+.rf-thumbnail-content .rf-row-3 .rf-cell:nth-child(2) {
+  text-align: center;
+}
+
+.rf-thumbnail-content .rf-ul,
+.rf-thumbnail-content .rf-ol {
+  margin: 1px 0 2px;
+  padding-left: 14px;
+}
+
+.rf-thumbnail-content .rf-ul {
+  list-style: disc;
+}
+
+.rf-thumbnail-content .rf-ol {
+  list-style: decimal;
+}
+
+.rf-thumbnail-content .rf-li {
+  font-size: 9.5px;
+  line-height: 1.35;
+  color: #4b5563;
+}
+
+.rf-thumbnail-content .rf-hr {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+.rf-thumbnail-content .rf-blockquote {
+  margin: 4px 0;
+  padding-left: 6px;
+  border-left: 2px solid var(--rf-preview-theme, #9ca3af);
+  color: #6b7280;
+  font-size: 10px;
+}
+
+.rf-thumbnail-content .rf-table {
+  width: 100%;
+  margin: 4px 0;
+  border-collapse: collapse;
+}
+
+.rf-thumbnail-content th,
+.rf-thumbnail-content td {
+  padding: 1.5px 3px;
+  border: 1px solid #e5e7eb;
+  font-size: 9.5px;
 }

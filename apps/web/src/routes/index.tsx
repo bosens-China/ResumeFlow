@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import type { ResumeSummary } from "@resumeflow/shared";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FileText, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { ResumeCard } from "@/components/resume-card";
+import { ResumeFlowLogo } from "@/components/resume-flow-logo";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,16 +34,42 @@ import {
   listResumes,
   updateResume,
 } from "@/lib/resume-store";
+import { useDocumentTitle } from "@/hooks/use-document-title";
+
+function ResumeListErrorPage({
+  error,
+  reset,
+}: {
+  error: unknown;
+  reset: () => void;
+}) {
+  useDocumentTitle();
+  const message = error instanceof Error ? error.message : "读取简历列表失败";
+
+  useEffect(() => {
+    toast.error(`读取接口失败: ${message}`);
+  }, [message]);
+
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4 text-muted-foreground py-24">
+      <p className="text-sm">读取简历列表失败，请检查网络或后端服务</p>
+      <Button variant="outline" size="sm" onClick={reset}>
+        重试
+      </Button>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/")({
   loader: () => listResumes(),
+  errorComponent: ResumeListErrorPage,
   component: ResumeListPage,
 });
 
 function ResumeListPage() {
+  useDocumentTitle();
   const initialResumes = Route.useLoaderData();
   const [resumes, setResumes] = useState<ResumeSummary[]>(initialResumes);
-  const [error, setError] = useState("");
   const [legacyCount, setLegacyCount] = useState(legacyDraftCount);
   const navigate = useNavigate();
 
@@ -57,7 +85,11 @@ function ResumeListPage() {
     const refresh = () => {
       void listResumes()
         .then(setResumes)
-        .catch((cause: unknown) => setError(String(cause)));
+        .catch((cause: unknown) => {
+          const msg =
+            cause instanceof Error ? cause.message : "读取简历列表失败";
+          toast.error(`读取接口失败: ${msg}`);
+        });
     };
     events.addEventListener("open", refresh);
     events.addEventListener("resume-changed", refresh);
@@ -77,7 +109,8 @@ function ResumeListPage() {
         params: { resumeId: resume.id },
       });
     } catch (cause) {
-      setError(String(cause));
+      const msg = cause instanceof Error ? cause.message : String(cause);
+      toast.error(msg);
     }
   }
 
@@ -98,7 +131,8 @@ function ResumeListPage() {
       setRenameTarget(null);
       await reload();
     } catch (cause) {
-      setError(String(cause));
+      const msg = cause instanceof Error ? cause.message : String(cause);
+      toast.error(msg);
       await reload();
     }
   }
@@ -109,7 +143,8 @@ function ResumeListPage() {
       await duplicateResume(resume.id);
       await reload();
     } catch (cause) {
-      setError(String(cause));
+      const msg = cause instanceof Error ? cause.message : String(cause);
+      toast.error(msg);
     }
   }
 
@@ -125,7 +160,8 @@ function ResumeListPage() {
       setDeleteTarget(null);
       await reload();
     } catch (cause) {
-      setError(String(cause));
+      const msg = cause instanceof Error ? cause.message : String(cause);
+      toast.error(msg);
       await reload();
     }
   }
@@ -136,14 +172,14 @@ function ResumeListPage() {
       <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-6">
         <div className="flex items-center gap-3">
           <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-            <FileText className="size-4" />
+            <ResumeFlowLogo className="size-4.5" />
           </div>
           <div className="flex items-center gap-2">
             <span className="font-bold tracking-tight text-base">
               ResumeFlow
             </span>
             <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-              简历编辑器
+              简流
             </span>
           </div>
         </div>
@@ -161,14 +197,6 @@ function ResumeListPage() {
 
       {/* 主体通栏内容区：宽度不再局限于窄版，充分利用 PC / 笔记本屏幕 */}
       <main className="flex-1 w-full px-6 lg:px-10 py-8">
-        {error && (
-          <p
-            role="alert"
-            className="mb-4 rounded-md border border-destructive px-4 py-2 text-sm text-destructive"
-          >
-            {error}
-          </p>
-        )}
         {legacyCount > 0 && (
           <div className="mb-4 flex items-center justify-between rounded-md border px-4 py-2 text-sm">
             <span>发现 {legacyCount} 份旧版浏览器草稿，可导入 SQLite。</span>
@@ -180,7 +208,11 @@ function ResumeListPage() {
                     setLegacyCount(legacyDraftCount());
                     await reload();
                   })
-                  .catch((cause: unknown) => setError(String(cause)))
+                  .catch((cause: unknown) => {
+                    const msg =
+                      cause instanceof Error ? cause.message : String(cause);
+                    toast.error(msg);
+                  })
               }
             >
               导入旧草稿
@@ -200,45 +232,35 @@ function ResumeListPage() {
           </div>
         </div>
 
-        {/* 业界经典的拟物纸张卡片网格布局 */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {/* 快捷新建简历卡片：置于网格第一个位置 */}
-          <div
-            onClick={handleCreate}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleCreate();
-            }}
-            className="group flex flex-col h-full cursor-pointer rounded-xl border border-dashed border-border bg-card/40 transition-all duration-200 hover:-translate-y-1 hover:border-foreground/30 hover:bg-muted/40 hover:shadow-md"
-          >
-            <div className="aspect-[1/1.22] w-full flex flex-col items-center justify-center p-6 text-muted-foreground transition-colors group-hover:text-foreground">
-              <div className="mb-3 flex size-12 items-center justify-center rounded-full border border-dashed border-border/80 bg-background shadow-xs transition-transform duration-200 group-hover:scale-110 group-hover:border-foreground/40">
-                <Plus className="size-5" />
-              </div>
-              <span className="text-sm font-semibold">新建一份简历</span>
-              <span className="mt-1 text-center text-xs text-muted-foreground">
-                空白模板 · Markdown 驱动
-              </span>
+        {/* 拟物纸张卡片网格布局：无简历时展示空状态，有简历时展示真实微缩列表 */}
+        {resumes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/80 py-24 text-center">
+            <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted/80 text-muted-foreground">
+              <FileText className="size-6" />
             </div>
-
-            <div className="mt-auto border-t p-3 flex items-center justify-between text-xs text-muted-foreground">
-              <span>立即创建</span>
-              <Plus className="size-3.5" />
-            </div>
+            <h3 className="text-base font-semibold">暂无简历</h3>
+            <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+              点击右上角「新建简历」或下方按钮开始创建你的第一份简历，支持
+              Markdown 实时排版与高保真导出。
+            </p>
+            <Button onClick={handleCreate} className="mt-4 gap-1.5" size="sm">
+              <Plus className="size-4" />
+              新建第一份简历
+            </Button>
           </div>
-
-          {/* 已有简历列表：上部微缩纸张骨架 + 下部信息条 */}
-          {resumes.map((resume) => (
-            <ResumeCard
-              key={resume.id}
-              resume={resume}
-              openRename={openRename}
-              handleDuplicate={handleDuplicate}
-              openDelete={openDelete}
-            />
-          ))}
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {resumes.map((resume) => (
+              <ResumeCard
+                key={resume.id}
+                resume={resume}
+                openRename={openRename}
+                handleDuplicate={handleDuplicate}
+                openDelete={openDelete}
+              />
+            ))}
+          </div>
+        )}
       </main>
 
       {/* 重命名 Dialog */}

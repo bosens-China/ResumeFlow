@@ -3,162 +3,30 @@ import { readFileSync } from "node:fs";
 import { logger } from "hono/logger";
 import { streamSSE } from "hono/streaming";
 import { validator } from "hono/validator";
+import { HTTPException } from "hono/http-exception";
 import { createMcpHonoApp } from "@modelcontextprotocol/hono";
-import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
-import { z } from "zod/v4";
-import type { HealthResponse } from "@resumeflow/shared";
-import { createStore, type ResumeStore } from "./store.ts";
-import { InvalidMarkdownError, renderMarkdown } from "./markdown.ts";
+import { getResumePdfFilename, type HealthResponse } from "@resumeflow/shared";
+import { createStore, duplicateResume } from "./store.ts";
+import { mcpHandler } from "./mcp.ts";
+import {
+  getPdfSource,
+  ResumeOperationError,
+  unwrapResult,
+} from "./resume-operations.ts";
+import {
+  createInput,
+  updateInput,
+  jsonValidator,
+  versionCreateInput,
+  versionRestoreInput,
+  deleteInput,
+} from "./schemas.ts";
 import { pagedScriptPath, resumePdf } from "./pdf.ts";
 
 const pagedScript = readFileSync(pagedScriptPath);
 export const serverPort = Number(
   process.env.PORT ?? (process.env.NODE_ENV === "production" ? 3000 : 10127),
 );
-
-const title = z.string().trim().min(1).max(120);
-const markdown = z
-  .string()
-  .max(1_000_000)
-  .superRefine((value, context) => {
-    try {
-      renderMarkdown(value);
-    } catch (error) {
-      if (error instanceof InvalidMarkdownError) {
-        context.addIssue({
-          code: "custom",
-          message: `第 ${error.line ?? "?"} 行：${error.message}`,
-        });
-      } else throw error;
-    }
-  });
-const createInput = z.object({
-  title: title.default("未命名简历"),
-  markdown: markdown.default(""),
-});
-const updateFields = {
-  revision: z.number().int().positive(),
-  title: title.optional(),
-  markdown: markdown.optional(),
-};
-const updateInput = z
-  .object(updateFields)
-  .refine((value) => value.title !== undefined || value.markdown !== undefined);
-const idInput = z.object({ id: z.uuid() });
-
-function validationError(error: z.ZodError) {
-  return error.issues.map((issue) => issue.message).join("；");
-}
-
-function jsonValidator<T extends z.ZodType>(schema: T) {
-  return validator("json", (value, c) => {
-    const parsed = schema.safeParse(value);
-    if (!parsed.success)
-      return c.json({ error: validationError(parsed.error) }, 400);
-    return parsed.data as z.output<T>;
-  });
-}
-
-function duplicateResume(store: ResumeStore, id: string) {
-  const original = store.get(id);
-  if (!original) return undefined;
-  const suffix = " (副本)";
-  return store.create(
-    `${original.title
-      .slice(0, 120 - suffix.length)
-      .replace(/[\uD800-\uDBFF]$/, "")
-      .trimEnd()}${suffix}`,
-    original.markdown,
-  );
-}
-
-function mcpHandler(store: ResumeStore) {
-  return createMcpHandler(() => {
-    const server = new McpServer({ name: "resumeflow", version: "0.1.0" });
-    const text = (value: unknown) => ({
-      content: [{ type: "text" as const, text: JSON.stringify(value) }],
-    });
-    const error = (message: string) => ({
-      isError: true,
-      content: [{ type: "text" as const, text: message }],
-    });
-
-    server.registerTool(
-      "list_resumes",
-      { description: "列出简历", inputSchema: z.object({}) },
-      async () => text(store.list()),
-    );
-    server.registerTool(
-      "create_resume",
-      { description: "创建简历", inputSchema: createInput },
-      async (input) => text(store.create(input.title, input.markdown)),
-    );
-    server.registerTool(
-      "get_resume",
-      { description: "读取简历", inputSchema: idInput },
-      async ({ id }) => {
-        const resume = store.get(id);
-        return resume ? text(resume) : error("简历不存在");
-      },
-    );
-    server.registerTool(
-      "update_resume",
-      {
-        description: "修改名称或 Markdown 正文，需提供当前 revision",
-        inputSchema: z.object({ id: z.uuid(), ...updateFields }),
-      },
-      async ({ id, revision, title, markdown: body }) => {
-        if (title === undefined && body === undefined)
-          return error("需要修改名称或正文");
-        const result = store.update(id, revision, { title, markdown: body });
-        if (result.status === "not_found") return error("简历不存在");
-        if (result.status === "conflict")
-          return error(`版本冲突，当前内容：${JSON.stringify(result.current)}`);
-        return text(result.resume);
-      },
-    );
-    server.registerTool(
-      "duplicate_resume",
-      { description: "创建指定简历的副本", inputSchema: idInput },
-      async ({ id }) => {
-        const copy = duplicateResume(store, id);
-        return copy ? text(copy) : error("简历不存在");
-      },
-    );
-    server.registerTool(
-      "delete_resume",
-      {
-        description: "删除简历，需提供当前 revision",
-        inputSchema: z.object({
-          id: z.uuid(),
-          revision: z.number().int().positive(),
-        }),
-      },
-      async ({ id, revision }) => {
-        const result = store.delete(id, revision);
-        if (result.status === "not_found") return error("简历不存在");
-        if (result.status === "conflict")
-          return error(`版本冲突，当前内容：${JSON.stringify(result.current)}`);
-        return text({ deleted: true, id });
-      },
-    );
-    server.registerTool(
-      "export_resume_pdf",
-      { description: "获取当前简历的 PDF 下载地址", inputSchema: idInput },
-      async ({ id }) => {
-        const resume = store.get(id);
-        if (!resume) return error("简历不存在");
-        const base =
-          process.env.RESUMEFLOW_PUBLIC_URL ?? `http://127.0.0.1:${serverPort}`;
-        return text({
-          url: `${base}/api/resumes/${id}/pdf?revision=${resume.revision}&download=1`,
-          revision: resume.revision,
-        });
-      },
-    );
-    return server;
-  });
-}
 
 export function createApp(store = createStore()) {
   const handler = mcpHandler(store);
@@ -167,6 +35,19 @@ export function createApp(store = createStore()) {
     allowedHosts: ["localhost", "127.0.0.1"],
   });
   app.use("*", logger());
+  app.onError((error, c) => {
+    if (error instanceof HTTPException) return error.getResponse();
+    if (error instanceof ResumeOperationError)
+      return c.json(
+        {
+          error: error.message,
+          ...(error.current ? { current: error.current } : {}),
+        },
+        error.status,
+      );
+    console.error(error);
+    return c.json({ error: "内部错误" }, 500);
+  });
 
   const routes = app
     .get("/api/health", (c) =>
@@ -180,23 +61,56 @@ export function createApp(store = createStore()) {
     )
     .get("/api/resumes", (c) => c.json(store.list()))
     .post("/api/resumes", jsonValidator(createInput), (c) => {
-      const { title, markdown } = c.req.valid("json");
-      return c.json(store.create(title, markdown), 201);
+      const { title, markdown, ...rest } = c.req.valid("json");
+      return c.json(store.create(title, markdown, rest), 201);
     })
     .get("/api/resumes/:id", (c) => {
       const resume = store.get(c.req.param("id"));
       return resume ? c.json(resume) : c.json({ error: "简历不存在" }, 404);
     })
+    .get("/api/resumes/:id/versions", (c) =>
+      store.get(c.req.param("id"))
+        ? c.json(store.listVersions(c.req.param("id")))
+        : c.json({ error: "简历不存在" }, 404),
+    )
+    .get("/api/resumes/:id/versions/:versionId", (c) => {
+      const version = store.getVersion(
+        c.req.param("id"),
+        c.req.param("versionId"),
+      );
+      return version ? c.json(version) : c.json({ error: "版本不存在" }, 404);
+    })
+    .post(
+      "/api/resumes/:id/versions",
+      jsonValidator(versionCreateInput),
+      (c) => {
+        const { revision, title } = c.req.valid("json");
+        const result = unwrapResult(
+          store.createVersion(c.req.param("id"), revision, title),
+        );
+        return c.json(result.version, 201);
+      },
+    )
+    .post(
+      "/api/resumes/:id/versions/:versionId/restore",
+      jsonValidator(versionRestoreInput),
+      (c) => {
+        const result = unwrapResult(
+          store.restoreVersion(
+            c.req.param("id"),
+            c.req.param("versionId"),
+            c.req.valid("json").revision,
+          ),
+          "版本不存在",
+        );
+        return c.json(result.resume);
+      },
+    )
     .patch("/api/resumes/:id", jsonValidator(updateInput), (c) => {
-      const { revision, title, markdown } = c.req.valid("json");
-      const result = store.update(c.req.param("id"), revision, {
-        title,
-        markdown,
-      });
-      if (result.status === "not_found")
-        return c.json({ error: "简历不存在" }, 404);
-      if (result.status === "conflict")
-        return c.json({ error: "版本冲突", current: result.current }, 409);
+      const { revision, ...patch } = c.req.valid("json");
+      const result = unwrapResult(
+        store.update(c.req.param("id"), revision, patch),
+      );
       return c.json(result.resume);
     })
     .post("/api/resumes/:id/duplicate", (c) => {
@@ -207,14 +121,11 @@ export function createApp(store = createStore()) {
       "/api/resumes/:id",
       validator("query", (query) => query),
       (c) => {
-        const revision = Number(c.req.query("revision"));
-        if (!Number.isSafeInteger(revision) || revision < 1)
-          return c.json({ error: "缺少有效 revision" }, 400);
-        const result = store.delete(c.req.param("id"), revision);
-        if (result.status === "not_found")
-          return c.json({ error: "简历不存在" }, 404);
-        if (result.status === "conflict")
-          return c.json({ error: "版本冲突", current: result.current }, 409);
+        const parsed = deleteInput.safeParse({
+          revision: Number(c.req.query("revision")),
+        });
+        if (!parsed.success) return c.json({ error: "缺少有效 revision" }, 400);
+        unwrapResult(store.delete(c.req.param("id"), parsed.data.revision));
         return c.body(null, 204);
       },
     )
@@ -241,16 +152,21 @@ export function createApp(store = createStore()) {
       "/api/resumes/:id/pdf",
       validator("query", (query) => query),
       async (c) => {
-        const resume = store.get(c.req.param("id"));
-        if (!resume) return c.json({ error: "简历不存在" }, 404);
-        const requested = c.req.query("revision");
-        if (requested && requested !== String(resume.revision))
-          return c.json({ error: "版本冲突", current: resume }, 409);
+        const versionId = c.req.query("versionId");
+        const { resume, language, title } = getPdfSource(
+          store,
+          c.req.param("id"),
+          {
+            versionId,
+            revision: c.req.query("revision"),
+            language: c.req.query("lang") || c.req.query("language"),
+          },
+        );
         try {
-          const pdf = await resumePdf(resume);
+          const pdf = await resumePdf(resume, language);
           const disposition =
             c.req.query("download") === "1"
-              ? `attachment; filename="resume.pdf"; filename*=UTF-8''${encodeURIComponent(resume.title)}.pdf`
+              ? `attachment; filename="resume.pdf"; filename*=UTF-8''${encodeURIComponent(getResumePdfFilename(title, language))}`
               : 'inline; filename="resume.pdf"';
           return c.body(new Uint8Array(pdf), 200, {
             "Content-Type": "application/pdf",
