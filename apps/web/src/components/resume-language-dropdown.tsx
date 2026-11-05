@@ -47,6 +47,9 @@ interface ResumeLanguageDropdownProps {
   onSelectLanguage: (lang: string) => void;
   onAddLanguage: (lang: string, copyFromCurrent: boolean) => void;
   onDeleteLanguage?: (lang: string) => void;
+  iconOnly?: boolean;
+  side?: "left" | "bottom" | "top" | "right";
+  align?: "start" | "center" | "end";
 }
 
 export function ResumeLanguageDropdown({
@@ -55,6 +58,9 @@ export function ResumeLanguageDropdown({
   onSelectLanguage,
   onAddLanguage,
   onDeleteLanguage,
+  iconOnly = false,
+  side = "left",
+  align = "start",
 }: ResumeLanguageDropdownProps) {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -102,22 +108,38 @@ export function ResumeLanguageDropdown({
     <>
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 gap-1.5 px-2.5 text-xs font-medium"
-            aria-label="切换简历语言版本"
-          >
-            <Globe className="size-3.5 text-muted-foreground" />
-            <span>{getLanguageName(currentLanguage)}</span>
-            <span className="font-mono text-[10px] text-muted-foreground bg-muted px-1 py-0.2 rounded">
-              {currentLanguage}
-            </span>
-            <ChevronDown className="size-3 opacity-60 ml-0.5" />
-          </Button>
+          {iconOnly ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=open]:bg-muted data-[state=open]:text-foreground transition-colors cursor-pointer"
+              aria-label={`切换简历语言版本 (当前: ${currentLanguage})`}
+            >
+              <Globe className="size-4" />
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 px-2.5 text-xs font-medium"
+              aria-label="切换简历语言版本"
+            >
+              <Globe className="size-3.5 text-muted-foreground" />
+              <span>{getLanguageName(currentLanguage)}</span>
+              <span className="font-mono text-[10px] text-muted-foreground bg-muted px-1 py-0.2 rounded">
+                {currentLanguage}
+              </span>
+              <ChevronDown className="size-3 opacity-60 ml-0.5" />
+            </Button>
+          )}
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-60 p-1.5">
+        <DropdownMenuContent
+          side={side}
+          align={align}
+          sideOffset={8}
+          className="w-60 p-1.5"
+        >
           <DropdownMenuLabel className="flex items-center justify-between px-2 py-1 text-xs font-medium text-muted-foreground">
             <span>语言版本</span>
             <span className="text-[10px] text-muted-foreground/60">

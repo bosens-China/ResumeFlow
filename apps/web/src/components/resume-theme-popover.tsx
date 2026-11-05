@@ -20,36 +20,64 @@ const THEME_COLOR_PRESETS = [
   { name: "石板灰", value: "#475569" },
 ];
 
+export interface ResumeThemePopoverProps {
+  themeColor?: string;
+  onChangeThemeColor: (color: string) => void;
+  iconOnly?: boolean;
+  side?: "left" | "bottom" | "top" | "right";
+  align?: "start" | "center" | "end";
+}
+
 export function ResumeThemePopover({
   themeColor,
   onChangeThemeColor,
-}: {
-  themeColor?: string;
-  onChangeThemeColor: (color: string) => void;
-}) {
+  iconOnly = false,
+  side = "left",
+  align = "start",
+}: ResumeThemePopoverProps) {
   const activeColor = themeColor || "#000000";
   const [customHex, setCustomHex] = useState(activeColor);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 gap-1.5 px-2.5 text-xs font-medium cursor-pointer"
-          aria-label="设置简历主题色"
-        >
-          <span
-            className="size-3 rounded-full border border-black/10 shrink-0 shadow-xs"
-            style={{ backgroundColor: activeColor }}
-          />
-          <Palette className="size-3.5 text-muted-foreground" />
-          <span className="hidden sm:inline">主题色</span>
-          <ChevronDown className="size-3 opacity-60" />
-        </Button>
+        {iconOnly ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=open]:bg-muted data-[state=open]:text-foreground transition-colors cursor-pointer relative"
+            aria-label={`设置简历主题色 (当前: ${activeColor})`}
+          >
+            <Palette className="size-4" />
+            <span
+              className="absolute bottom-1.5 right-1.5 size-2 rounded-full border border-background ring-1 ring-border shadow-xs"
+              style={{ backgroundColor: activeColor }}
+            />
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 px-2.5 text-xs font-medium cursor-pointer"
+            aria-label="设置简历主题色"
+          >
+            <span
+              className="size-3 rounded-full border border-black/10 shrink-0 shadow-xs"
+              style={{ backgroundColor: activeColor }}
+            />
+            <Palette className="size-3.5 text-muted-foreground" />
+            <span className="hidden sm:inline">主题色</span>
+            <ChevronDown className="size-3 opacity-60" />
+          </Button>
+        )}
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-56 p-2">
+      <DropdownMenuContent
+        side={side}
+        align={align}
+        sideOffset={8}
+        className="w-56 p-2"
+      >
         <DropdownMenuLabel className="text-xs text-muted-foreground">
           快捷预设颜色
         </DropdownMenuLabel>

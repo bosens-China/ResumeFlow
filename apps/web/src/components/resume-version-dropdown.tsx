@@ -27,6 +27,9 @@ interface ResumeVersionDropdownProps {
   isDirty: boolean;
   onSelectVersion: (versionId: string) => Promise<boolean>;
   onSaveCurrent: () => Promise<boolean>;
+  iconOnly?: boolean;
+  side?: "left" | "bottom" | "top" | "right";
+  align?: "start" | "center" | "end";
 }
 
 export function ResumeVersionDropdown({
@@ -35,6 +38,9 @@ export function ResumeVersionDropdown({
   isDirty,
   onSelectVersion,
   onSaveCurrent,
+  iconOnly = false,
+  side = "left",
+  align = "start",
 }: ResumeVersionDropdownProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingTarget, setPendingTarget] =
@@ -72,25 +78,48 @@ export function ResumeVersionDropdown({
     <>
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            aria-label="查看简历历史版本记录"
-            className="h-8 gap-1.5 px-2.5 text-xs font-medium"
-          >
-            <History className="size-3.5 shrink-0 text-muted-foreground" />
-            <span>版本记录</span>
-            {versions.length > 0 && (
-              <span className="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                {versions.length}
-              </span>
-            )}
-            <ChevronDown className="size-3 opacity-60 ml-0.5" />
-          </Button>
+          {iconOnly ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={busy}
+              aria-label={`查看简历历史版本记录 (共 ${versions.length} 个版本)`}
+              className="size-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=open]:bg-muted data-[state=open]:text-foreground transition-colors cursor-pointer relative"
+            >
+              <History className="size-4 shrink-0" />
+              {isDirty && (
+                <span
+                  className="absolute top-2 right-2 size-1.5 rounded-full bg-amber-500 ring-1 ring-background"
+                  title="当前有未保存修改"
+                />
+              )}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              aria-label="查看简历历史版本记录"
+              className="h-8 gap-1.5 px-2.5 text-xs font-medium"
+            >
+              <History className="size-3.5 shrink-0 text-muted-foreground" />
+              <span>版本记录</span>
+              {versions.length > 0 && (
+                <span className="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                  {versions.length}
+                </span>
+              )}
+              <ChevronDown className="size-3 opacity-60 ml-0.5" />
+            </Button>
+          )}
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-64 p-1.5">
+        <DropdownMenuContent
+          side={side}
+          align={align}
+          sideOffset={8}
+          className="w-64 p-1.5"
+        >
           <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1 font-medium">
             历史版本记录
           </DropdownMenuLabel>

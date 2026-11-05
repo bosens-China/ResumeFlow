@@ -64,6 +64,9 @@ export interface ResumeSpacingPopoverProps {
   onChangeMargin: (margin: string) => void;
   lineHeight?: number;
   onChangeLineHeight: (lineHeight: number) => void;
+  iconOnly?: boolean;
+  side?: "left" | "bottom" | "top" | "right";
+  align?: "start" | "center" | "end";
 }
 
 export function ResumeSpacingPopover({
@@ -71,6 +74,9 @@ export function ResumeSpacingPopover({
   onChangeMargin,
   lineHeight = 1.0,
   onChangeLineHeight,
+  iconOnly = false,
+  side = "left",
+  align = "start",
 }: ResumeSpacingPopoverProps) {
   const currentMargin = margin?.trim() || "14mm";
   const { vertical, horizontal } = parseMarginValues(currentMargin);
@@ -128,21 +134,33 @@ export function ResumeSpacingPopover({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 gap-1.5 px-2.5 text-xs font-medium cursor-pointer"
-          aria-label="调节简历排版间距"
-        >
-          <Sliders className="size-3.5 text-muted-foreground" />
-          <span>间距</span>
-          <ChevronDown className="size-3 opacity-60" />
-        </Button>
+        {iconOnly ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=open]:bg-muted data-[state=open]:text-foreground transition-colors cursor-pointer"
+            aria-label="调节简历排版间距"
+          >
+            <Sliders className="size-4" />
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 px-2.5 text-xs font-medium cursor-pointer"
+            aria-label="调节简历排版间距"
+          >
+            <Sliders className="size-3.5 text-muted-foreground" />
+            <span>间距</span>
+            <ChevronDown className="size-3 opacity-60" />
+          </Button>
+        )}
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        align="end"
-        sideOffset={6}
+        side={side}
+        align={align}
+        sideOffset={8}
         className="w-68 p-3 space-y-3 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >

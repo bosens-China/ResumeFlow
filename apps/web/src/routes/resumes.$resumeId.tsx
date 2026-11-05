@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { useKeyPress, useLocalStorageState } from "ahooks";
-import { Code2, FileText, PanelRight } from "lucide-react";
+import { Code2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { AutoResizeTitleInput } from "@/components/auto-resize-title-input";
 import { BrandLogo } from "@/components/brand-logo";
 import { CssEditor } from "@/components/css-editor";
 import { ResumeEditorFooter } from "@/components/resume-editor-footer";
-import { ResumeEditorSidebar } from "@/components/resume-editor-sidebar";
+import { ResumeEditorIconRail } from "@/components/resume-editor-icon-rail";
 import { ResumeExportButton } from "@/components/resume-export-button";
 import { getResumeFont } from "@resumeflow/shared/resume-fonts";
 import { type PreviewStatus, ResumePreview } from "@/components/resume-preview";
@@ -94,13 +94,6 @@ function ResumeDetailPage() {
           : 520,
     },
   );
-  const [sidebarOpen = true, setSidebarOpen] = useLocalStorageState<boolean>(
-    "resumeflow_editor_sidebar_open",
-    {
-      defaultValue: () =>
-        typeof window === "undefined" || window.innerWidth > 1440,
-    },
-  );
   const [isDragging, setIsDragging] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
@@ -121,7 +114,7 @@ function ResumeDetailPage() {
     const containerRect = mainRef.current?.getBoundingClientRect();
     if (!containerRect) return;
     const minEditorWidth = 320;
-    const minPreviewWidth = 400 + (sidebarOpen ? 272 : 0);
+    const minPreviewWidth = 876;
     const maxEditorWidth = Math.max(
       minEditorWidth,
       containerRect.width - minPreviewWidth,
@@ -169,7 +162,7 @@ function ResumeDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
           <Button
             size="sm"
             variant="outline"
@@ -192,20 +185,6 @@ function ResumeDetailPage() {
             exporting={editor.exporting}
             onExport={(lang) => void editor.exportPdf(lang)}
           />
-
-          <div className="h-4 w-px bg-border shrink-0 mx-1" />
-
-          <Button
-            size="sm"
-            variant={sidebarOpen ? "secondary" : "outline"}
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="h-8 gap-1.5 px-2.5 text-xs font-medium cursor-pointer"
-            title={sidebarOpen ? "收起工具栏" : "展开工具栏"}
-            aria-label={sidebarOpen ? "收起工具栏" : "展开工具栏"}
-          >
-            <PanelRight className="size-3.5 text-muted-foreground" />
-            <span className="hidden sm:inline">工具栏</span>
-          </Button>
         </div>
       </header>
 
@@ -234,7 +213,7 @@ function ResumeDetailPage() {
       >
         <section
           style={{
-            width: `clamp(320px, ${editorWidth}px, calc(100vw - ${sidebarOpen ? 672 : 400}px))`,
+            width: `clamp(320px, ${editorWidth}px, calc(100vw - 876px))`,
           }}
           className="relative flex min-h-0 flex-col border-r bg-background shrink-0"
         >
@@ -326,8 +305,7 @@ function ResumeDetailPage() {
           />
         </section>
 
-        <ResumeEditorSidebar
-          open={Boolean(sidebarOpen)}
+        <ResumeEditorIconRail
           font={font}
           onChangeFont={editor.handleChangeFont}
           themeColor={editor.themeColor}
