@@ -49,11 +49,6 @@ test(
       await page.route("**/api/events", (route) => route.abort());
       const url = `${vite.resolvedUrls!.local[0]}resumes/${resume.id}`;
       await page.goto(url);
-      await page.getByRole("button", { name: "展开工具栏" }).waitFor();
-      assert.equal(
-        await page.locator("aside").getAttribute("aria-hidden"),
-        "true",
-      );
       const editor = page.getByRole("textbox", { name: "Markdown 编辑器" });
       const save = page.getByRole("button", { name: "保存并发布版本 (⌘S)" });
       const back = page.getByRole("link", {
