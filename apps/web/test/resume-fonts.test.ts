@@ -59,42 +59,27 @@ test(
       page.on("pageerror", (error) => errors.push(error.message));
       const fontButton = page.getByRole("button", { name: "选择简历字体" });
       async function ready(family: string) {
-        await page
-          .waitForFunction(
-            (family) => {
-              const frame = document.querySelector(
-                'iframe[aria-hidden="false"]',
-              );
-              return frame
-                ?.getAttribute("srcdoc")
-                ?.match(/body\s*\{[^}]*font:\s*[^;]*/)?.[0]
-                ?.includes(`"${family}"`);
-            },
-            family,
-            { timeout: 15_000 },
-          )
-          .catch(async (error: unknown) => {
-            console.error(
-              "Preview failure:",
-              await page.getByRole("alert").allTextContents(),
-              errors,
-            );
-            throw error;
-          });
         const handle = await page
           .locator('iframe[aria-hidden="false"]')
           .elementHandle();
         const frame = await handle!.contentFrame();
         assert.ok(frame);
-        assert.ok(
-          await frame.evaluate(
-            (family) =>
+        await frame.waitForFunction(
+          (family) => {
+            const content = document.querySelector(
+              "#pages .rf-preview-content",
+            );
+            return (
+              content &&
+              getComputedStyle(content).fontFamily.includes(family) &&
               Array.from(document.fonts).some(
                 (font) =>
                   font.family.includes(family) && font.status === "loaded",
-              ),
-            family,
-          ),
+              )
+            );
+          },
+          family,
+          { timeout: 15_000 },
         );
       }
       async function select(name: string) {
@@ -106,9 +91,8 @@ test(
         await page.getByRole("menu").getByText(name, { exact: true }).click();
       }
       await page.goto(`${vite.resolvedUrls!.local[0]}resumes/${resume.id}`);
-      await page.getByRole("button", { name: "展开工具栏" }).click();
       await ready("RF Source Han Sans");
-      assert.match(await fontButton.innerText(), /思源黑体/);
+      assert.match((await fontButton.getAttribute("aria-label"))!, /思源黑体/);
       await select("MiSans");
       await ready("RF MiSans");
       await page.waitForFunction(
@@ -119,7 +103,7 @@ test(
       );
       await language("英语");
       await ready("RF Inter");
-      assert.match(await fontButton.innerText(), /Inter/);
+      assert.match((await fontButton.getAttribute("aria-label"))!, /Inter/);
       await select("HarmonyOS Sans");
       await ready("RF HarmonyOS Sans");
       await language("简体中文");
@@ -157,8 +141,10 @@ test(
           .evaluate((header) => header.scrollWidth <= header.clientWidth),
       );
       await page.screenshot({ path: "/tmp/resumeflow-fonts-header.png" });
-      await page.route("**/api/fonts/misans-*.woff2", (route) => route.abort());
-      await select("MiSans");
+      await page.route("**/api/fonts/alibaba-puhuiti-*.ttf", (route) =>
+        route.abort(),
+      );
+      await select("阿里普惠体");
       await page
         .getByRole("alert")
         .filter({ hasText: "字体加载失败" })
@@ -169,9 +155,9 @@ test(
           .isDisabled(),
         true,
       );
-      await page.unroute("**/api/fonts/misans-*.woff2");
+      await page.unroute("**/api/fonts/alibaba-puhuiti-*.ttf");
       await page.getByRole("button", { name: "重试预览" }).click();
-      await ready("RF MiSans");
+      await ready("RF Alibaba PuHuiTi");
       assert.deepEqual(errors, []);
     } finally {
       await browser.close();

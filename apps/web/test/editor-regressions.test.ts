@@ -47,7 +47,6 @@ test(
       const page = await browser.newPage();
       await page.route("**/api/events", (route) => route.abort());
       await page.goto(`${vite.resolvedUrls!.local[0]}resumes/${resume.id}`);
-      await page.getByRole("button", { name: "展开工具栏" }).click();
       const editor = page.getByRole("textbox", { name: "Markdown 编辑器" });
       await editor.waitFor();
       let gate = new Promise<void>((resolve) => {
@@ -146,9 +145,9 @@ test(
         .elementHandle();
       const frame = await iframe!.contentFrame();
       assert.ok(frame);
-      assert.equal(await frame.locator(".rf-left").count(), 1);
-      assert.equal(await frame.locator(".rf-right").count(), 1);
-      assert.equal(await frame.locator(".rf-p br").count(), 1);
+      assert.equal(await frame.locator("#pages .rf-left").count(), 1);
+      assert.equal(await frame.locator("#pages .rf-right").count(), 1);
+      assert.equal(await frame.locator("#pages .rf-p br").count(), 1);
       const alignment = await frame.evaluate(() => {
         const left = document.querySelector(".rf-left")!;
         const right = document.querySelector(".rf-right")!;
@@ -173,7 +172,9 @@ test(
           rightTable: getComputedStyle(document.querySelector(".rf-right td")!)
             .textAlign,
           columnAlignments: [
-            ...document.querySelectorAll("table:first-of-type th[align]"),
+            ...document.querySelectorAll(
+              "#pages table:first-of-type th[align]",
+            ),
           ].map((cell) =>
             getComputedStyle(cell).textAlign.replace(/^-webkit-/, ""),
           ),

@@ -135,18 +135,7 @@ export function ResumeCard({
                 </span>
               </span>
 
-              <ResumePageCount
-                key={JSON.stringify([
-                  currentLang,
-                  item?.markdown ?? resume.markdown,
-                  item?.font,
-                  resume.themeColor,
-                  resume.margin,
-                  resume.lineHeight,
-                  resume.customCss,
-                ])}
-                resume={resume}
-              />
+              <ResumePageCount resume={resume} />
             </div>
           </div>
 

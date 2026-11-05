@@ -3,6 +3,7 @@ import type { ResumeSummary, ResumeTemplate } from "@resumeflow/shared";
 import { Check, Eye, Sparkles } from "lucide-react";
 import { ResumePreview } from "@/components/resume-preview";
 import { ResumeThumbnail } from "@/components/resume-thumbnail";
+import { ResumePageCount } from "@/components/resume-page-count";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -87,6 +88,9 @@ export function TemplateCard({
             <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
               {template.description}
             </p>
+            <div className="text-[11px]">
+              <ResumePageCount resume={fakeResume} />
+            </div>
           </div>
 
           {/* 底部操作与速览栏：左侧适用角色，右侧使用模板 */}
@@ -113,7 +117,7 @@ export function TemplateCard({
         </div>
       </div>
 
-      {/* 全屏细节预览 Dialog：复用真实 A4 Paged.js 分页预览组件 */}
+      {/* 模板与编辑器共用 HTML 分页预览。 */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="w-[94vw] max-w-[95vw] sm:max-w-[960px] md:max-w-[1000px] h-[90vh] flex flex-col p-6 gap-3 overflow-hidden">
           <DialogHeader className="shrink-0">
@@ -130,7 +134,6 @@ export function TemplateCard({
             </DialogDescription>
           </DialogHeader>
 
-          {/* 真实 A4 分页 PDF 预览区：复用 ResumePreview 核心组件 */}
           <div className="flex-1 min-h-0 overflow-hidden rounded-lg border bg-muted/30 relative">
             {previewOpen && (
               <ResumePreview
