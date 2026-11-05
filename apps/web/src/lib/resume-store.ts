@@ -1,4 +1,4 @@
-import type { Resume } from "@resumeflow/shared";
+import type { Resume, ResumeTemplate } from "@resumeflow/shared";
 import { api } from "./api";
 
 const LEGACY_KEY = "resumeflow:resumes";
@@ -48,13 +48,30 @@ export async function getResume(id: string): Promise<Resume | undefined> {
 }
 
 export async function createResume(
-  input: { title?: string; markdown?: string } = {},
+  input: {
+    title?: string;
+    markdown?: string;
+    themeColor?: string;
+    margin?: string;
+    lineHeight?: number;
+    customCss?: string;
+  } = {},
 ) {
   const response = await api.api.resumes.$post({
     json: { title: DEFAULT_RESUME_NAME, markdown: DEFAULT_MARKDOWN, ...input },
   });
   if (!response.ok) return throwApiError(response);
   return response.json();
+}
+
+export async function createResumeFromTemplate(template: ResumeTemplate) {
+  return createResume({
+    title: template.name.replace(/（.*）/, "").trim(),
+    markdown: template.markdown,
+    themeColor: template.themeColor,
+    margin: template.margin,
+    customCss: template.customCss,
+  });
 }
 
 export async function updateResume(
@@ -65,6 +82,7 @@ export async function updateResume(
     markdown?: string;
     themeColor?: string;
     margin?: string;
+    lineHeight?: number;
     customCss?: string;
     currentLanguage?: string;
     languages?: Record<string, { title?: string; markdown: string }>;

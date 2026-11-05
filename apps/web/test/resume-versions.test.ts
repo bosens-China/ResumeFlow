@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { test } from "node:test";
+import { test } from "vitest";
 import { createServer } from "vite";
 import { createApp } from "../../server/src/app.ts";
 import { createStore } from "../../server/src/store.ts";
@@ -48,6 +48,7 @@ test(
         viewport: { width: 1440, height: 900 },
       });
       await page.goto(`${vite.resolvedUrls!.local[0]}resumes/${resume.id}`);
+      await page.getByRole("button", { name: "展开工具栏" }).click();
       const editor = page.getByRole("textbox", { name: "Markdown 编辑器" });
       await editor.waitFor();
 
@@ -214,6 +215,7 @@ test(
         viewport: { width: 1440, height: 900 },
       });
       await page.goto(`${vite.resolvedUrls!.local[0]}resumes/${resume.id}`);
+      await page.getByRole("button", { name: "展开工具栏" }).click();
       const editor = page.getByRole("textbox", { name: "Markdown 编辑器" });
       const saveButton = page.getByRole("button", {
         name: "保存并发布版本 (⌘S)",

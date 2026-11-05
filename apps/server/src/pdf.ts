@@ -6,7 +6,9 @@ import { BlockList, isIP } from "node:net";
 import { fileURLToPath } from "node:url";
 import type { Resume } from "@resumeflow/shared";
 import { getResumePageCss } from "@resumeflow/shared/resume-css";
+import { waitForResumeFonts } from "@resumeflow/shared/resume-fonts";
 import { renderMarkdown } from "./markdown.ts";
+import { readResumeFont } from "./fonts.ts";
 
 export const pagedScriptPath = fileURLToPath(
   new URL("../dist/paged.polyfill.js", import.meta.resolve("pagedjs")),
@@ -129,19 +131,23 @@ function escapeHtml(value: string) {
 }
 
 export function resumeHtml(resume: Resume, language?: string) {
-  const targetLang = language || resume.currentLanguage;
+  const targetLang = language || resume.currentLanguage || "zh";
   const langItem =
     targetLang && resume.languages ? resume.languages[targetLang] : undefined;
   const title = langItem?.title || resume.title;
   const markdown = langItem?.markdown ?? resume.markdown;
   const styleCss = getResumePageCss({
+    font: langItem?.font,
+    language: targetLang,
+    fontBaseUrl: "http://resumeflow.invalid",
     themeColor: resume.themeColor,
     margin: resume.margin,
+    lineHeight: resume.lineHeight,
     customCss: resume.customCss,
   });
 
   return `<!doctype html>
-<html lang="${targetLang === "en" ? "en" : "zh-CN"}">
+<html lang="${escapeHtml(targetLang)}">
 <head>
   <meta charset="utf-8">
   <title>${escapeHtml(title)}</title>
@@ -161,6 +167,26 @@ export async function resumePdf(
   try {
     const imageErrors: string[] = [];
     await page.route("**/*", async (route) => {
+      const url = new URL(route.request().url());
+      if (
+        url.origin === "http://resumeflow.invalid" &&
+        url.pathname.startsWith("/api/fonts/")
+      ) {
+        try {
+          const font = await readResumeFont(
+            url.pathname.slice("/api/fonts/".length),
+          );
+          if (!font) throw new Error("内置字体不存在");
+          await route.fulfill({
+            ...font,
+            headers: { "Access-Control-Allow-Origin": "*" },
+          });
+        } catch (error) {
+          imageErrors.push(String(error));
+          await route.abort();
+        }
+        return;
+      }
       if (route.request().resourceType() !== "image") return route.abort();
       try {
         const image = await imageResponse(new URL(route.request().url()));
@@ -178,7 +204,7 @@ export async function resumePdf(
       ).PagedConfig = { auto: false };
     });
     await page.addScriptTag({ path: pagedScriptPath });
-    await page.evaluate("document.fonts.ready");
+    await page.evaluate(waitForResumeFonts);
     await page.evaluate(async () => {
       const paged = (
         window as typeof window & {
@@ -206,6 +232,7 @@ export async function resumePdf(
         Array.from(document.images, (image) => image.decode().catch(() => {})),
       ),
     );
+    await page.evaluate(waitForResumeFonts);
     if (imageErrors.length) throw new Error(imageErrors.join("；"));
     return Buffer.from(
       await page.pdf({

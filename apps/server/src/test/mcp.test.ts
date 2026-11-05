@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 import type { Resume } from "@resumeflow/shared";
-import { createApp } from "./app.ts";
-import { closePdfBrowser } from "./pdf.ts";
-import { createStore } from "./store.ts";
+import { createApp } from "../app.ts";
+import { closePdfBrowser } from "../pdf.ts";
+import { createStore } from "../store.ts";
 
 test("MCP exposes the same resume operations and revision protection", async () => {
   const store = createStore(":memory:");

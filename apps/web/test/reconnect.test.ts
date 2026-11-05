@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { test } from "node:test";
+import { test } from "vitest";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
 import { createApp } from "../../server/src/app.ts";
@@ -15,7 +15,7 @@ const { chromium } = require("playwright") as typeof import("playwright");
 
 test(
   "the editor and list refresh after the event stream reconnects",
-  { timeout: 30000 },
+  { timeout: 60_000 },
   async () => {
     const store = createStore(":memory:");
     const resume = store.create("原始名称", "# 原始内容");

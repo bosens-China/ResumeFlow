@@ -1,13 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { type ResumeSummary, renderMarkdown } from "@resumeflow/shared";
+import { useSize } from "ahooks";
 import { FileText } from "lucide-react";
+import { getResumePageCss } from "@resumeflow/shared/resume-css";
 
 export function ResumeThumbnail({ resume }: { resume: ResumeSummary }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const size = useSize(containerRef);
   const currentLang = resume.currentLanguage ?? "zh";
   const item = resume.languages?.[currentLang];
   const activeMarkdown = (item?.markdown ?? resume.markdown ?? "").trim();
   const activeTitle = (item?.title ?? resume.title).trim();
-  const themeColor = resume.themeColor?.trim() || "#111827";
 
   const parsedHtml = useMemo(() => {
     if (!activeMarkdown) return null;
@@ -17,6 +20,11 @@ export function ResumeThumbnail({ resume }: { resume: ResumeSummary }) {
       return null;
     }
   }, [activeMarkdown]);
+
+  // A4 标准纸张宽度：794px (210mm @ 96DPI)
+  const A4_WIDTH = 794;
+  const containerWidth = size?.width || 180;
+  const scale = containerWidth / A4_WIDTH;
 
   if (!parsedHtml) {
     return (
@@ -39,17 +47,29 @@ export function ResumeThumbnail({ resume }: { resume: ResumeSummary }) {
   }
 
   return (
-    <div
-      className="rf-thumbnail-paper"
-      style={
-        {
-          "--rf-preview-theme": themeColor,
-        } as React.CSSProperties
-      }
-    >
-      <div
-        className="rf-thumbnail-content"
-        dangerouslySetInnerHTML={{ __html: parsedHtml }}
+    <div ref={containerRef} className="rf-thumbnail-paper">
+      <iframe
+        title="简历缩略图"
+        aria-hidden="true"
+        tabIndex={-1}
+        sandbox=""
+        srcDoc={`<!doctype html><html><head><style>${getResumePageCss({
+          font: item?.font,
+          language: currentLang,
+          fontBaseUrl: window.location.origin,
+          themeColor: resume.themeColor,
+          margin: resume.margin,
+          lineHeight: resume.lineHeight,
+          customCss: resume.customCss,
+        })}</style></head><body>${parsedHtml}</body></html>`}
+        style={{
+          width: A4_WIDTH,
+          height: 1123,
+          border: 0,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+          pointerEvents: "none",
+        }}
       />
       {/* 底部平滑羽化渐变，长内容自然截断 */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-white to-transparent" />

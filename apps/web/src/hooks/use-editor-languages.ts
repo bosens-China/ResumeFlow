@@ -1,14 +1,13 @@
 import type { RefObject } from "react";
 import { type DraftState, getDraftLanguages } from "@/lib/resume-draft";
+import type { ResumeFontId } from "@resumeflow/shared/resume-fonts";
 
 interface UseEditorLanguagesOptions {
   draft: RefObject<DraftState>;
   name: string;
   content: string;
   currentLang: string;
-  setLanguages: (
-    langs: Record<string, { title?: string; markdown: string }>,
-  ) => void;
+  setLanguages: (langs: DraftState["languages"]) => void;
   setCurrentLang: (lang: string) => void;
   setName: (name: string) => void;
   setContent: (content: string) => void;
@@ -29,7 +28,7 @@ export function useEditorLanguages({
   save,
 }: UseEditorLanguagesOptions) {
   function applyLanguageSwitch(
-    nextLanguages: Record<string, { title?: string; markdown: string }>,
+    nextLanguages: DraftState["languages"],
     nextLang: string,
     nextTitle: string,
     nextContent: string,
@@ -95,9 +94,22 @@ export function useEditorLanguages({
     );
   }
 
+  function handleChangeFont(font: ResumeFontId) {
+    const next = getDraftLanguages(draft.current);
+    next[draft.current.currentLanguage] = {
+      ...next[draft.current.currentLanguage]!,
+      font,
+    };
+    draft.current = { ...draft.current, languages: next };
+    setLanguages(next);
+    checkDirty();
+    void save();
+  }
+
   return {
     handleSelectLanguage,
     handleAddLanguage,
     handleDeleteLanguage,
+    handleChangeFont,
   };
 }

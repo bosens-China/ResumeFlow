@@ -1,19 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { useKeyPress, useLocalStorageState } from "ahooks";
-import { ArrowLeft, Code2, FileText } from "lucide-react";
+import { Code2, FileText, PanelRight } from "lucide-react";
 import { toast } from "sonner";
 import { AutoResizeTitleInput } from "@/components/auto-resize-title-input";
+import { BrandLogo } from "@/components/brand-logo";
 import { CssEditor } from "@/components/css-editor";
 import { ResumeEditorFooter } from "@/components/resume-editor-footer";
+import { ResumeEditorSidebar } from "@/components/resume-editor-sidebar";
 import { ResumeExportButton } from "@/components/resume-export-button";
-import { ResumeLanguageDropdown } from "@/components/resume-language-dropdown";
+import { getResumeFont } from "@resumeflow/shared/resume-fonts";
 import { type PreviewStatus, ResumePreview } from "@/components/resume-preview";
-import { ResumeVersionDropdown } from "@/components/resume-version-dropdown";
-import {
-  ResumeMarginPopover,
-  ResumeThemePopover,
-} from "@/components/resume-style-popovers";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -75,6 +72,10 @@ export const Route = createFileRoute("/resumes/$resumeId")({
 function ResumeDetailPage() {
   const resume = Route.useLoaderData();
   const editor = useResumeEditor(resume);
+  const font = getResumeFont(
+    editor.languages[editor.currentLang]?.font,
+    editor.currentLang,
+  ).id;
   useDocumentTitle(editor.name.trim() || DEFAULT_RESUME_NAME);
   const [activeTab, setActiveTab] = useState<"markdown" | "css">("markdown");
   const [previewedContent, setPreviewedContent] = useState<string | null>(null);
@@ -91,6 +92,13 @@ function ResumeDetailPage() {
         typeof window !== "undefined"
           ? Math.max(380, Math.min(window.innerWidth * 0.45, 600))
           : 520,
+    },
+  );
+  const [sidebarOpen = true, setSidebarOpen] = useLocalStorageState<boolean>(
+    "resumeflow_editor_sidebar_open",
+    {
+      defaultValue: () =>
+        typeof window === "undefined" || window.innerWidth > 1440,
     },
   );
   const [isDragging, setIsDragging] = useState(false);
@@ -113,7 +121,7 @@ function ResumeDetailPage() {
     const containerRect = mainRef.current?.getBoundingClientRect();
     if (!containerRect) return;
     const minEditorWidth = 320;
-    const minPreviewWidth = 828; // A4 纸张、预览留白和分隔条
+    const minPreviewWidth = 400 + (sidebarOpen ? 272 : 0);
     const maxEditorWidth = Math.max(
       minEditorWidth,
       containerRect.width - minPreviewWidth,
@@ -137,18 +145,8 @@ function ResumeDetailPage() {
   return (
     <div className="flex h-full flex-col bg-background">
       <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-5">
-        <div className="flex items-center gap-3 min-w-0">
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="size-8 shrink-0 text-muted-foreground hover:text-foreground"
-            aria-label="返回简历列表"
-          >
-            <Link to="/">
-              <ArrowLeft className="size-4" />
-            </Link>
-          </Button>
+        <div className="flex items-center gap-4 min-w-0">
+          <BrandLogo />
 
           <div className="h-4 w-px bg-border shrink-0" />
 
@@ -171,39 +169,13 @@ function ResumeDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
-          <ResumeVersionDropdown
-            versions={editor.history.versions}
-            busy={editor.history.busy}
-            isDirty={editor.isDirty()}
-            onSelectVersion={editor.history.switchToVersion}
-            onSaveCurrent={() => editor.saveVersion()}
-          />
-
-          <ResumeLanguageDropdown
-            currentLanguage={editor.currentLang}
-            languages={editor.languages}
-            onSelectLanguage={editor.handleSelectLanguage}
-            onAddLanguage={editor.handleAddLanguage}
-            onDeleteLanguage={editor.handleDeleteLanguage}
-          />
-
-          <ResumeThemePopover
-            themeColor={editor.themeColor}
-            onChangeThemeColor={editor.handleChangeThemeColor}
-          />
-
-          <ResumeMarginPopover
-            margin={editor.margin}
-            onChangeMargin={editor.handleChangeMargin}
-          />
-
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             size="sm"
             variant="outline"
             disabled={!editor.isDirty() || editor.isPublishing}
             onClick={() => void editor.saveVersion()}
-            className="h-8 gap-1.5 px-3 text-xs font-medium"
+            className="h-8 gap-1.5 px-3 text-xs font-medium cursor-pointer"
             aria-label="保存并发布版本 (⌘S)"
           >
             <span>保存</span>
@@ -220,6 +192,20 @@ function ResumeDetailPage() {
             exporting={editor.exporting}
             onExport={(lang) => void editor.exportPdf(lang)}
           />
+
+          <div className="h-4 w-px bg-border shrink-0 mx-1" />
+
+          <Button
+            size="sm"
+            variant={sidebarOpen ? "secondary" : "outline"}
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="h-8 gap-1.5 px-2.5 text-xs font-medium cursor-pointer"
+            title={sidebarOpen ? "收起工具栏" : "展开工具栏"}
+            aria-label={sidebarOpen ? "收起工具栏" : "展开工具栏"}
+          >
+            <PanelRight className="size-3.5 text-muted-foreground" />
+            <span className="hidden sm:inline">工具栏</span>
+          </Button>
         </div>
       </header>
 
@@ -248,7 +234,7 @@ function ResumeDetailPage() {
       >
         <section
           style={{
-            width: `clamp(320px, ${editorWidth}px, calc(100vw - 828px))`,
+            width: `clamp(320px, ${editorWidth}px, calc(100vw - ${sidebarOpen ? 672 : 400}px))`,
           }}
           className="relative flex min-h-0 flex-col border-r bg-background shrink-0"
         >
@@ -323,19 +309,44 @@ function ResumeDetailPage() {
           />
         </div>
 
-        <section className="min-h-0 flex-1 min-w-[820px] bg-muted/30 overflow-hidden relative">
+        <section className="min-h-0 flex-1 min-w-0 bg-muted/30 overflow-hidden relative">
           {isDragging && (
             <div className="absolute inset-0 z-30 cursor-col-resize" />
           )}
           <ResumePreview
             content={editor.content}
+            font={font}
+            language={editor.currentLang}
             themeColor={editor.themeColor}
             margin={editor.margin}
+            lineHeight={editor.lineHeight}
             customCss={editor.customCss}
             onReadyChange={setPreviewedContent}
             onStatusChange={setPreviewStatus}
           />
         </section>
+
+        <ResumeEditorSidebar
+          open={Boolean(sidebarOpen)}
+          font={font}
+          onChangeFont={editor.handleChangeFont}
+          themeColor={editor.themeColor}
+          onChangeThemeColor={editor.handleChangeThemeColor}
+          margin={editor.margin}
+          onChangeMargin={editor.handleChangeMargin}
+          lineHeight={editor.lineHeight}
+          onChangeLineHeight={editor.handleChangeLineHeight}
+          currentLanguage={editor.currentLang}
+          languages={editor.languages}
+          onSelectLanguage={editor.handleSelectLanguage}
+          onAddLanguage={editor.handleAddLanguage}
+          onDeleteLanguage={editor.handleDeleteLanguage}
+          versions={editor.history.versions}
+          busyVersions={editor.history.busy}
+          isDirty={editor.isDirty()}
+          onSelectVersion={editor.history.switchToVersion}
+          onSaveCurrent={() => editor.saveVersion()}
+        />
       </main>
 
       <ResumeEditorFooter

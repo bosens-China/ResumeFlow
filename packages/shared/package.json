@@ -6,19 +6,39 @@
   "exports": {
     ".": {
       "types": "./src/index.ts",
+      "browser": "./src/index.ts",
+      "development": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./markdown": {
       "types": "./src/markdown.ts",
+      "browser": "./src/markdown.ts",
+      "development": "./src/markdown.ts",
       "default": "./dist/markdown.js"
     },
     "./resume-css": {
       "types": "./src/resume-css.ts",
+      "browser": "./src/resume-css.ts",
+      "development": "./src/resume-css.ts",
       "default": "./dist/resume-css.js"
+    },
+    "./resume-fonts": {
+      "types": "./src/resume-fonts.ts",
+      "browser": "./src/resume-fonts.ts",
+      "development": "./src/resume-fonts.ts",
+      "default": "./dist/resume-fonts.js"
     },
     "./css-tools": {
       "types": "./src/css-tools.ts",
+      "browser": "./src/css-tools.ts",
+      "development": "./src/css-tools.ts",
       "default": "./dist/css-tools.js"
+    },
+    "./templates": {
+      "types": "./src/templates.ts",
+      "browser": "./src/templates.ts",
+      "development": "./src/templates.ts",
+      "default": "./dist/templates.js"
     }
   },
   "scripts": {
@@ -27,6 +47,7 @@
   },
   "dependencies": {
     "prettier": "3.9.10",
+    "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "rehype-stringify": "^10.0.1",
     "remark-directive": "^4.0.0",
@@ -37,6 +58,7 @@
     "unist-util-visit": "^5.2.0"
   },
   "devDependencies": {
+    "@types/hast": "^3.0.5",
     "@types/mdast": "^4.0.4"
   }
 }

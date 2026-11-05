@@ -1,6 +1,7 @@
-import { validator } from "hono/validator";
+import { validator } from "hono-openapi";
 import { z } from "zod/v4";
 import { formatAndValidateCss } from "@resumeflow/shared/css-tools";
+import { RESUME_FONT_IDS } from "@resumeflow/shared/resume-fonts";
 import { InvalidMarkdownError, renderMarkdown } from "./markdown.ts";
 
 const title = z
@@ -25,11 +26,18 @@ const markdown = z
     }
   })
   .describe(
-    "完整 Markdown 正文，会替换目标语言原文。支持 :::left/center/right 及 ::::row 中的 :::cell；图片必须使用完整 HTTP(S) URL",
+    "完整 Markdown 正文，会替换目标语言原文。支持 :::left/center/right、::::row 中的 :::cell 及安全 HTML（含 img，危险标签和属性会被移除）。所有图片必须使用完整 HTTP(S) URL。顶部 h1 后、首个 h2–h6 前的图片默认采用头像裁剪，进入模块后为普通图片；HTML 标题遵循相同规则",
+  );
+const font = z
+  .enum(RESUME_FONT_IDS)
+  .optional()
+  .describe(
+    "目标语言的字体 ID：source-han-sans、alibaba-puhuiti、misans、harmonyos-sans、inter、pingfang-sc。未设置时中文默认 source-han-sans，其他语言默认 inter；不影响其他语言",
   );
 const languageItem = z.object({
   title: title.optional(),
   markdown: markdown,
+  font,
 });
 const themeColor = z
   .string()
@@ -41,7 +49,15 @@ const margin = z
   .max(50)
   .optional()
   .describe(
-    "全部语言共用的 CSS 页边距，例如 10mm 或 12mm 15mm；空字符串恢复默认",
+    "全部语言共用的 CSS 内边距，例如 10mm 或 12mm 15mm；空字符串恢复默认",
+  );
+const lineHeight = z
+  .number()
+  .min(0.5)
+  .max(2.0)
+  .optional()
+  .describe(
+    "全部语言共用的排版行距与垂直间距倍率，默认 1.0；例如 0.9 为紧凑排版，1.1 为宽松排版",
   );
 const customCss = z
   .string()
@@ -83,9 +99,11 @@ export const createInput = z.object({
   markdown: markdown.default(""),
   themeColor,
   margin,
+  lineHeight,
   customCss,
   currentLanguage,
   languages,
+  font,
 });
 const updateFields = {
   revision,
@@ -93,13 +111,15 @@ const updateFields = {
   markdown: markdown.optional(),
   themeColor,
   margin,
+  lineHeight,
   customCss,
   currentLanguage,
   languages,
+  font,
   language: languageCode
     .optional()
     .describe(
-      "只指定 title/markdown 的写入语言，不切换当前语言；省略时使用 currentLanguage 或原当前语言。可用于新增语言正文，不会自动翻译",
+      "只指定 title/markdown/font 的写入语言，不切换当前语言；省略时使用 currentLanguage 或原当前语言。可用于新增语言正文，不会自动翻译",
     ),
 };
 export const updateInput = z
@@ -130,16 +150,13 @@ export const pdfInput = versionIdInput.partial({ versionId: true }).extend({
     ),
 });
 
-function validationError(error: z.ZodError) {
-  return error.issues.map((issue) => issue.message).join("；");
-}
-
 export function jsonValidator<T extends z.ZodType>(schema: T) {
-  return validator("json", async (value, c) => {
-    const parsed = await schema.safeParseAsync(value);
-    if (!parsed.success)
-      return c.json({ error: validationError(parsed.error) }, 400);
-    return parsed.data as z.output<T>;
+  return validator("json", schema, (result, c) => {
+    if (!result.success)
+      return c.json(
+        { error: result.error.map((issue) => issue.message).join("；") },
+        400,
+      );
   });
 }
 

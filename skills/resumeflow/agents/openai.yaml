@@ -1,0 +1,4 @@
+interface:
+  display_name: "ResumeFlow"
+  short_description: "通过 MCP 优先、HTTP 接口兜底的方式管理 ResumeFlow 简历"
+  default_prompt: "使用 $resumeflow 帮我查找并修改简历，再导出 PDF。"

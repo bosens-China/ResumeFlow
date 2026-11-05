@@ -1,19 +1,16 @@
 import type { MouseEvent } from "react";
-import {
-  type ResumeSummary,
-  estimateResumePageCount,
-} from "@resumeflow/shared";
+import type { ResumeSummary } from "@resumeflow/shared";
 import { Link } from "@tanstack/react-router";
 import {
   Clock,
   Copy,
-  FileText,
   Languages,
   MoreHorizontal,
   Pencil,
   Trash2,
 } from "lucide-react";
 import { ResumeThumbnail } from "@/components/resume-thumbnail";
+import { ResumePageCount } from "@/components/resume-page-count";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -38,7 +35,6 @@ export function ResumeCard({
   const currentLang = resume.currentLanguage ?? "zh";
   const item = resume.languages?.[currentLang];
   const activeTitle = (item?.title ?? resume.title).trim();
-  const activeMarkdown = (item?.markdown ?? resume.markdown ?? "").trim();
   const langCodes = Object.keys(
     resume.languages && Object.keys(resume.languages).length > 0
       ? resume.languages
@@ -46,7 +42,6 @@ export function ResumeCard({
   );
   const langCount = langCodes.length;
   const currentLangName = getLanguageName(currentLang);
-  const pageCount = estimateResumePageCount(activeMarkdown, resume.margin);
 
   return (
     <div className="group relative flex flex-col rounded-xl border border-border bg-card shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:border-foreground/25 hover:shadow-[0_12px_24px_-8px_rgba(0,0,0,0.1),0_4px_8px_-4px_rgba(0,0,0,0.06)]">
@@ -57,9 +52,9 @@ export function ResumeCard({
         className="flex flex-1 flex-col rounded-xl overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {/* 上层：微缩 A4 纸张真实内容视觉区 */}
-        <div className="relative aspect-[1/1.22] w-full overflow-hidden bg-muted/30 p-3.5 flex items-center justify-center border-b transition-colors duration-300 ease-out group-hover:bg-muted/45">
+        <div className="relative aspect-[1/1.24] w-full overflow-hidden bg-muted/30 p-3.5 flex items-center justify-center border-b transition-colors duration-300 ease-out group-hover:bg-muted/45">
           <div
-            className="h-full w-[82%] rounded-xs bg-white shadow-xs transition-shadow duration-300 ease-out group-hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden select-none"
+            className="h-full aspect-[210/297] rounded-xs bg-white shadow-xs transition-shadow duration-300 ease-out group-hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden select-none"
             style={{
               boxShadow:
                 "0 1px 3px rgba(0, 0, 0, 0.05), 0 6px 12px -2px rgba(0, 0, 0, 0.04)",
@@ -140,13 +135,18 @@ export function ResumeCard({
                 </span>
               </span>
 
-              <span
-                className="inline-flex items-center gap-1 rounded bg-muted/70 px-1.5 py-0.5 font-medium text-muted-foreground/90"
-                title={`预估 A4 排版页数: ${pageCount} 页`}
-              >
-                <FileText className="size-3 shrink-0 opacity-70" />
-                <span>{pageCount} 页</span>
-              </span>
+              <ResumePageCount
+                key={JSON.stringify([
+                  currentLang,
+                  item?.markdown ?? resume.markdown,
+                  item?.font,
+                  resume.themeColor,
+                  resume.margin,
+                  resume.lineHeight,
+                  resume.customCss,
+                ])}
+                resume={resume}
+              />
             </div>
           </div>
 

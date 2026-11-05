@@ -1,5 +1,6 @@
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod/v4";
+import { RESUME_TEMPLATES } from "@resumeflow/shared";
 import { duplicateResume, type ResumeStore } from "./store.ts";
 import {
   getPdfSource,
@@ -94,6 +95,15 @@ export function mcpHandler(store: ResumeStore) {
       async () => text(store.list()),
     );
     server.registerTool(
+      "list_resume_templates",
+      {
+        description:
+          "列出预设的简历模板（如 AI 应用开发极简模板、产品经理左对齐带头像模板），可用于创建新简历",
+        inputSchema: z.object({}),
+      },
+      async () => text(RESUME_TEMPLATES),
+    );
+    server.registerTool(
       "create_resume",
       {
         description:
@@ -115,7 +125,7 @@ export function mcpHandler(store: ResumeStore) {
       "update_resume",
       {
         description:
-          "修改名称、Markdown、语言版本、主题色、边距或自定义 CSS，需当前 revision。普通字段局部更新；languages 整体替换，遗漏语言会被删除。language 只指定正文写入目标，currentLanguage 切换显示语言。不会自动翻译",
+          "修改名称、Markdown、语言版本、字体、主题色、内边距、行距与间距或自定义 CSS，需当前 revision。font 按目标语言保存；普通字段局部更新。languages 整体替换，遗漏语言会被删除。language 指定标题、正文和字体的写入目标，currentLanguage 切换显示语言。不会自动翻译",
         inputSchema: updateInput.safeExtend(idInput.shape),
       },
       async ({ id, revision, ...patch }) =>

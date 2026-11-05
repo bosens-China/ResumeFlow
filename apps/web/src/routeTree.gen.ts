@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as ResumesResumeIdRouteImport } from './routes/resumes.$resumeId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TemplatesRoute = TemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResumesResumeIdRoute = ResumesResumeIdRouteImport.update({
@@ -25,27 +31,31 @@ const ResumesResumeIdRoute = ResumesResumeIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/templates': typeof TemplatesRoute
   '/resumes/$resumeId': typeof ResumesResumeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/templates': typeof TemplatesRoute
   '/resumes/$resumeId': typeof ResumesResumeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/templates': typeof TemplatesRoute
   '/resumes/$resumeId': typeof ResumesResumeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/resumes/$resumeId'
+  fullPaths: '/' | '/templates' | '/resumes/$resumeId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/resumes/$resumeId'
-  id: '__root__' | '/' | '/resumes/$resumeId'
+  to: '/' | '/templates' | '/resumes/$resumeId'
+  id: '__root__' | '/' | '/templates' | '/resumes/$resumeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  TemplatesRoute: typeof TemplatesRoute
   ResumesResumeIdRoute: typeof ResumesResumeIdRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/templates': {
+      id: '/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof TemplatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/resumes/$resumeId': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  TemplatesRoute: TemplatesRoute,
   ResumesResumeIdRoute: ResumesResumeIdRoute,
 }
 export const routeTree = rootRouteImport

@@ -5,80 +5,23 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkDirective from "remark-directive";
 import remarkRehype from "remark-rehype";
+import rehypeRaw from "rehype-raw";
 import rehypeSanitize, {
   defaultSchema,
   type Options as SanitizeOptions,
 } from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
+import {
+  htmlLayout,
+  InvalidMarkdownError,
+  validateHtmlImages,
+} from "./html-rules.js";
 
-export class InvalidMarkdownError extends Error {
-  readonly line?: number;
-
-  constructor(message: string, line?: number) {
-    super(message);
-    this.line = line;
-  }
-}
-
-function addClass(node: unknown, cls: string) {
-  const target = node as { data?: Record<string, unknown> };
-  const data = target.data ?? (target.data = {});
-  const hProperties = (data.hProperties ?? (data.hProperties = {})) as Record<
-    string,
-    unknown
-  >;
-  const existing = Array.isArray(hProperties.className)
-    ? hProperties.className
-    : [];
-  hProperties.className = [...existing, cls];
-}
+export { InvalidMarkdownError } from "./html-rules.js";
 
 function markdownRules() {
   return (tree: Root) => {
-    const definitions = new Map<string, string>();
-    visit(tree, "definition", (node) => {
-      definitions.set(node.identifier, node.url);
-    });
     visit(tree, (node, _index, parent) => {
-      if (node.type === "image" || node.type === "imageReference") {
-        const source =
-          node.type === "image" ? node.url : definitions.get(node.identifier);
-        if (source === undefined) return;
-        const url = URL.canParse(source) ? new URL(source) : null;
-        if (
-          !url ||
-          !["http:", "https:"].includes(url.protocol) ||
-          url.username ||
-          url.password
-        )
-          throw new InvalidMarkdownError(
-            "图片只支持完整的 HTTP(S) URL",
-            node.position?.start.line,
-          );
-        return;
-      }
-      if (node.type === "heading") {
-        addClass(node, `rf-h${(node as { depth: number }).depth}`);
-      } else if (node.type === "paragraph") {
-        addClass(node, "rf-p");
-      } else if (node.type === "list") {
-        addClass(
-          node,
-          (node as { ordered?: boolean }).ordered ? "rf-ol" : "rf-ul",
-        );
-      } else if (node.type === "listItem") {
-        addClass(node, "rf-li");
-      } else if (node.type === "link") {
-        addClass(node, "rf-link");
-      } else if (node.type === "blockquote") {
-        addClass(node, "rf-blockquote");
-      } else if (node.type === "table") {
-        addClass(node, "rf-table");
-      } else if (node.type === "thematicBreak") {
-        addClass(node, "rf-hr");
-      } else if (node.type === "code" || node.type === "inlineCode") {
-        addClass(node, "rf-code");
-      }
       if (
         !["containerDirective", "leafDirective", "textDirective"].includes(
           node.type,
@@ -156,11 +99,14 @@ const processor = unified()
   .use(remarkGfm)
   .use(remarkDirective)
   .use(markdownRules)
-  .use(remarkRehype)
+  .use(remarkRehype, { allowDangerousHtml: true })
+  .use(rehypeRaw)
+  .use(validateHtmlImages)
   .use(rehypeSanitize, {
     ...defaultSchema,
     attributes: schemaAttributes,
   })
+  .use(htmlLayout)
   .use(rehypeStringify);
 
 export function renderMarkdown(markdown: string): string {

@@ -1,13 +1,14 @@
-import type { Resume } from "@resumeflow/shared";
+import type { Resume, ResumeLanguageItem } from "@resumeflow/shared";
 import { DEFAULT_RESUME_NAME } from "./resume-store";
 
 export interface DraftState {
   title: string;
   markdown: string;
   currentLanguage: string;
-  languages: Record<string, { title?: string; markdown: string }>;
+  languages: Record<string, ResumeLanguageItem>;
   themeColor: string;
   margin: string;
+  lineHeight: number;
   customCss: string;
 }
 
@@ -24,6 +25,7 @@ export function getInitialDraft(r: Resume): DraftState {
     languages: langs,
     themeColor: r.themeColor || "",
     margin: r.margin || "",
+    lineHeight: r.lineHeight ?? 1,
     customCss: r.customCss || "",
   };
 }
@@ -32,6 +34,7 @@ export function getDraftLanguages(current: DraftState) {
   return {
     ...current.languages,
     [current.currentLanguage]: {
+      ...current.languages[current.currentLanguage],
       title: current.title.trim() || DEFAULT_RESUME_NAME,
       markdown: current.markdown,
     },
@@ -65,6 +68,10 @@ export function computeResumePatch(
     margin:
       (current.margin || "") !== (base.margin || "")
         ? current.margin
+        : undefined,
+    lineHeight:
+      (current.lineHeight ?? 1) !== (base.lineHeight ?? 1)
+        ? current.lineHeight
         : undefined,
     customCss:
       (current.customCss || "") !== (base.customCss || "")

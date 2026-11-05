@@ -7,6 +7,7 @@ import type {
   Resume,
   ResumeChangedEvent,
   ResumeLanguageItem,
+  ResumeFontId,
   ResumeSummary,
 } from "@resumeflow/shared";
 
@@ -29,7 +30,8 @@ export function createStore(
       current_language TEXT DEFAULT 'zh',
       theme_color TEXT DEFAULT '',
       margin TEXT DEFAULT '',
-      custom_css TEXT DEFAULT ''
+      custom_css TEXT DEFAULT '',
+      line_height REAL DEFAULT NULL
     )
   `);
 
@@ -49,19 +51,21 @@ export function createStore(
     db.exec("ALTER TABLE resumes ADD COLUMN margin TEXT DEFAULT ''");
   if (!colNames.has("custom_css"))
     db.exec("ALTER TABLE resumes ADD COLUMN custom_css TEXT DEFAULT ''");
+  if (!colNames.has("line_height"))
+    db.exec("ALTER TABLE resumes ADD COLUMN line_height REAL DEFAULT NULL");
 
   const listeners = new Set<(event: ResumeChangedEvent) => void>();
   const fields =
-    "id, title, markdown, revision, created_at AS createdAt, updated_at AS updatedAt, languages, current_language AS currentLanguage, theme_color AS themeColor, margin, custom_css AS customCss";
+    "id, title, markdown, revision, created_at AS createdAt, updated_at AS updatedAt, languages, current_language AS currentLanguage, theme_color AS themeColor, margin, custom_css AS customCss, line_height AS lineHeight";
   const select = db.prepare(`SELECT ${fields} FROM resumes WHERE id = ?`);
   const list = db.prepare(
     `SELECT ${fields} FROM resumes ORDER BY updated_at DESC, id DESC`,
   );
   const insert = db.prepare(
-    "INSERT INTO resumes (id, title, markdown, revision, created_at, updated_at, languages, current_language, theme_color, margin, custom_css) VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO resumes (id, title, markdown, revision, created_at, updated_at, languages, current_language, theme_color, margin, custom_css, line_height) VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)",
   );
   const update = db.prepare(
-    "UPDATE resumes SET title = ?, markdown = ?, languages = ?, current_language = ?, theme_color = ?, margin = ?, custom_css = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?",
+    "UPDATE resumes SET title = ?, markdown = ?, languages = ?, current_language = ?, theme_color = ?, margin = ?, custom_css = ?, line_height = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?",
   );
   const remove = db.prepare(
     "DELETE FROM resumes WHERE id = ? AND revision = ?",
@@ -84,7 +88,7 @@ export function createStore(
         markdown: (row.markdown as string) || "",
       };
     }
-    return {
+    const result: Resume = {
       id: row.id as string,
       title: row.title as string,
       markdown: (row.markdown as string) || "",
@@ -93,10 +97,14 @@ export function createStore(
       updatedAt: row.updatedAt as string,
       currentLanguage,
       languages,
-      themeColor: (row.themeColor as string) || undefined,
-      margin: (row.margin as string) || undefined,
-      customCss: (row.customCss as string) || undefined,
     };
+    if (row.themeColor) result.themeColor = row.themeColor as string;
+    if (row.margin) result.margin = row.margin as string;
+    if (row.customCss) result.customCss = row.customCss as string;
+    if (row.lineHeight != null && !Number.isNaN(row.lineHeight)) {
+      result.lineHeight = Number(row.lineHeight);
+    }
+    return result;
   }
 
   function get(id: string): Resume | undefined {
@@ -123,7 +131,9 @@ export function createStore(
         currentLanguage?: string;
         themeColor?: string;
         margin?: string;
+        lineHeight?: number;
         customCss?: string;
+        font?: ResumeFontId;
       },
     ): Resume {
       const id = randomUUID();
@@ -135,6 +145,14 @@ export function createStore(
         },
       );
       const activeItem = languages[currentLanguage];
+      if (options?.font) {
+        languages[currentLanguage] = {
+          ...activeItem,
+          title: activeItem?.title ?? title,
+          markdown: activeItem?.markdown ?? markdown,
+          font: options.font,
+        };
+      }
       insert.run(
         id,
         activeItem?.title ?? title,
@@ -146,6 +164,7 @@ export function createStore(
         options?.themeColor ?? "",
         options?.margin ?? "",
         options?.customCss ?? "",
+        options?.lineHeight ?? null,
       );
       const resume = get(id)!;
       notify(resume);
@@ -161,8 +180,10 @@ export function createStore(
         currentLanguage?: string;
         themeColor?: string;
         margin?: string;
+        lineHeight?: number;
         customCss?: string;
         language?: string;
+        font?: ResumeFontId;
       },
     ) {
       const current = get(id);
@@ -177,7 +198,11 @@ export function createStore(
       const nextCurrentLanguage =
         patch.currentLanguage ?? current.currentLanguage ?? "zh";
 
-      if (patch.markdown !== undefined || patch.title !== undefined) {
+      if (
+        patch.markdown !== undefined ||
+        patch.title !== undefined ||
+        patch.font !== undefined
+      ) {
         const targetLang = patch.language || nextCurrentLanguage;
         const existingLang = nextLanguages[targetLang] ?? {
           title: current.title,
@@ -185,8 +210,10 @@ export function createStore(
             targetLang === current.currentLanguage ? current.markdown : "",
         };
         nextLanguages[targetLang] = {
+          ...existingLang,
           title: patch.title ?? existingLang.title ?? current.title,
           markdown: patch.markdown ?? existingLang.markdown,
+          ...(patch.font !== undefined ? { font: patch.font } : {}),
         };
       }
 
@@ -203,6 +230,10 @@ export function createStore(
         patch.customCss !== undefined
           ? patch.customCss
           : (current.customCss ?? "");
+      const nextLineHeight =
+        patch.lineHeight !== undefined
+          ? patch.lineHeight
+          : (current.lineHeight ?? null);
 
       const now = new Date().toISOString();
       const result = update.run(
@@ -213,6 +244,7 @@ export function createStore(
         nextThemeColor,
         nextMargin,
         nextCustomCss,
+        nextLineHeight,
         now,
         id,
         revision,
@@ -256,12 +288,17 @@ export function duplicateResume(store: ResumeStore, id: string) {
     .trimEnd()}${suffix}`;
   const languages = structuredClone(original.languages ?? {});
   const language = original.currentLanguage || "zh";
-  languages[language] = { title, markdown: original.markdown };
+  languages[language] = {
+    ...languages[language],
+    title,
+    markdown: original.markdown,
+  };
   return store.create(title, original.markdown, {
     languages,
     currentLanguage: original.currentLanguage,
     themeColor: original.themeColor,
     margin: original.margin,
+    lineHeight: original.lineHeight,
     customCss: original.customCss,
   });
 }

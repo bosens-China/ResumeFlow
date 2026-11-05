@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 import { chromium } from "playwright";
-import { createApp } from "./app.ts";
-import { InvalidMarkdownError, renderMarkdown } from "./markdown.ts";
-import { resumeHtml } from "./pdf.ts";
-import { createStore } from "./store.ts";
+import { createApp } from "../app.ts";
+import { InvalidMarkdownError, renderMarkdown } from "../markdown.ts";
+import { resumeHtml } from "../pdf.ts";
+import { createStore } from "../store.ts";
 import { getResumePdfFilename } from "@resumeflow/shared";
 
 test("PDF filenames omit the default Chinese suffix", () => {

@@ -27,8 +27,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm build
       - run: pnpm --filter @resumeflow/server exec playwright install --with-deps --only-shell chromium
-      - run: pnpm --filter @resumeflow/server test
-      - run: pnpm --filter @resumeflow/server exec tsx --tsconfig ../web/tsconfig.app.json --test "../web/test/*.test.ts"
+      - run: pnpm test
 
   docker:
     needs: check

@@ -96,6 +96,7 @@ export function GlobalHelpMenu() {
 
   function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
     if (e.button !== 0) return;
+    e.preventDefault();
     dragStartRef.current = {
       pointerX: e.clientX,
       pointerY: e.clientY,
@@ -150,13 +151,7 @@ export function GlobalHelpMenu() {
         style={{ position: "fixed", left: `${pos.x}px`, top: `${pos.y}px` }}
         className="z-40 touch-none select-none"
       >
-        <DropdownMenu
-          open={menuOpen}
-          onOpenChange={(next) => {
-            if (hasMovedRef.current) return;
-            setMenuOpen(next);
-          }}
-        >
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
@@ -169,6 +164,8 @@ export function GlobalHelpMenu() {
                   e.preventDefault();
                   e.stopPropagation();
                   hasMovedRef.current = false;
+                } else {
+                  setMenuOpen((open) => !open);
                 }
               }}
               className={cn(

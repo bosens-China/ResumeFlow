@@ -4,7 +4,14 @@ import {
   InvalidMarkdownError,
   renderMarkdown,
 } from "@resumeflow/shared/markdown";
-import { getResumePageCss } from "@resumeflow/shared/resume-css";
+import {
+  getResumePageCss,
+  type ResumeStyleOptions,
+} from "@resumeflow/shared/resume-css";
+import {
+  waitForResumeFonts,
+  type ResumeFontId,
+} from "@resumeflow/shared/resume-fonts";
 
 const PAGE_WIDTH = 816;
 
@@ -36,10 +43,13 @@ function parse(content: string): Parsed {
 function previewDocument(
   html: string,
   id: number,
-  styles?: { themeColor?: string; margin?: string; customCss?: string },
+  styles?: ResumeStyleOptions,
 ) {
-  const pageCss = getResumePageCss(styles);
-  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+  const pageCss = getResumePageCss({
+    ...styles,
+    fontBaseUrl: window.location.origin,
+  });
+  return `<!doctype html><html><head><meta charset="utf-8">
 <style>${pageCss}</style>
 <style media="screen">
   html, body { overflow: hidden; margin: 0; padding: 0; background: transparent; }
@@ -56,10 +66,12 @@ function previewDocument(
 <script>window.PagedConfig={auto:false};</script><script src="/api/pagedjs.js"></script>
 </head><body class="rf-root"><main id="source" class="rf-root">${html}</main><div id="pages"></div>
 <script>(async()=>{
-  const source=document.querySelector('#source'); const content=source.innerHTML; source.remove();
-  await document.fonts.ready;
+  const source=document.querySelector('#source'); const content=source.innerHTML;
+  await (${waitForResumeFonts.toString()})();
+  source.remove();
   const paged=window.PagedPolyfill;
   await paged.preview(content,paged.removeStyles(),document.querySelector('#pages'));
+  await (${waitForResumeFonts.toString()})();
   parent.postMessage({source:'resumeflow-preview',id:${id},height:document.documentElement.scrollHeight,pages:document.querySelectorAll('.pagedjs_page').length},'*');
 })().catch(error=>parent.postMessage({source:'resumeflow-preview',id:${id},error:String(error)},'*'));</script>
 </body></html>`;
@@ -73,15 +85,21 @@ export interface PreviewStatus {
 
 export function ResumePreview({
   content,
+  font,
+  language,
   themeColor,
   margin,
+  lineHeight,
   customCss,
   onReadyChange,
   onStatusChange,
 }: {
   content: string;
+  font?: ResumeFontId;
+  language?: string;
   themeColor?: string;
   margin?: string;
+  lineHeight?: number;
   customCss?: string;
   onReadyChange: (content: string | null) => void;
   onStatusChange?: (status: PreviewStatus) => void;
@@ -97,10 +115,26 @@ export function ResumePreview({
     retry: 0,
     themeColor,
     margin,
+    lineHeight,
     customCss,
+    font,
+    language,
   });
   const [retry, setRetry] = useState(0);
   const parsed = useMemo(() => parse(content), [content]);
+  const source = useMemo(
+    () =>
+      JSON.stringify([
+        parsed.html,
+        font,
+        language,
+        themeColor,
+        margin,
+        lineHeight,
+        customCss,
+      ]),
+    [parsed.html, font, language, themeColor, margin, lineHeight, customCss],
+  );
   const [frames, setFrames] = useState<[Frame | null, Frame | null]>([
     null,
     null,
@@ -116,12 +150,15 @@ export function ResumePreview({
     onReadyChange(null);
     const id = ++requestId.current;
     generation.current = {
-      html: parsed.html,
+      html: source,
       content,
       retry,
       themeColor,
       margin,
+      lineHeight,
       customCss,
+      font,
+      language,
     };
     if (parsed.error) return;
     const timer = setTimeout(() => {
@@ -130,12 +167,15 @@ export function ResumePreview({
         const next = [...old] as [Frame | null, Frame | null];
         next[index] = {
           id,
-          source: parsed.html,
+          source,
           retry,
           doc: previewDocument(parsed.html, id, {
             themeColor,
             margin,
+            lineHeight,
             customCss,
+            font,
+            language,
           }),
           height: 1123,
           pages: 0,
@@ -146,7 +186,7 @@ export function ResumePreview({
     const timeout = setTimeout(() => {
       if (requestId.current === id && completedId.current !== id)
         setFailure({
-          html: parsed.html,
+          html: source,
           retry,
           message: "分页预览超时，请重试",
         });
@@ -159,10 +199,14 @@ export function ResumePreview({
     content,
     parsed.html,
     parsed.error,
+    source,
     retry,
     themeColor,
     margin,
+    lineHeight,
     customCss,
+    font,
+    language,
     onReadyChange,
   ]);
 
@@ -211,13 +255,9 @@ export function ResumePreview({
 
   const visible = frames[activeIndex];
   const previewError =
-    failure?.html === parsed.html && failure.retry === retry
-      ? failure.message
-      : "";
+    failure?.html === source && failure.retry === retry ? failure.message : "";
   const ready =
-    visible?.source === parsed.html &&
-    visible.retry === retry &&
-    !!visible.pages;
+    visible?.source === source && visible.retry === retry && !!visible.pages;
 
   useEffect(() => {
     onStatusChange?.({

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 import { createApp } from "../../server/src/app.ts";
 import { createStore } from "../../server/src/store.ts";
 import { api } from "../src/lib/api.ts";

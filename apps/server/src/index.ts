@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { createApp, serverPort } from "./app.ts";
 import { closePdfBrowser } from "./pdf.ts";
 import { createStore } from "./store.ts";
+import { logger } from "./logger.ts";
 
 const store = createStore();
 const app = createApp(store);
@@ -24,7 +25,13 @@ const server = serve(
     hostname: process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1",
   },
   (info) => {
-    console.log(`Server listening on http://localhost:${info.port}`);
+    logger.info(
+      {
+        url: `http://localhost:${info.port}`,
+        docs: `http://localhost:${info.port}/api/docs`,
+      },
+      "Server listening",
+    );
   },
 );
 
@@ -32,7 +39,7 @@ const shutdown = () => {
   server.close();
   if ("closeAllConnections" in server) server.closeAllConnections();
   void closePdfBrowser()
-    .catch(console.error)
+    .catch((err) => logger.error({ err }, "PDF browser shutdown failed"))
     .finally(() => store.close());
 };
 

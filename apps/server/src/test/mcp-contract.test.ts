@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { createApp } from "./app.ts";
-import { createStore } from "./store.ts";
+import { test } from "vitest";
+import { createApp } from "../app.ts";
+import { createStore } from "../store.ts";
 
 async function rpc(
   app: ReturnType<typeof createApp>,
@@ -32,6 +32,50 @@ async function rpc(
     }[];
   };
 }
+
+test("REST and MCP accept HTML and reject invalid HTML image URLs without writes", async () => {
+  const store = createStore(":memory:");
+  try {
+    const app = createApp(store);
+    const headers = { Host: "localhost", "Content-Type": "application/json" };
+    const markdown =
+      '# 简历\n\n<img src="https://example.com/photo.png" width="96">\n\n## 经历\n\n<span>内容</span>';
+    const created = await app.request("/api/resumes", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ title: "HTML 简历", markdown }),
+    });
+    assert.equal(created.status, 201);
+    const resume = await created.json();
+    assert.equal(resume.markdown, markdown);
+    const result = await rpc(app, "tools/call", {
+      name: "update_resume",
+      arguments: {
+        id: resume.id,
+        revision: resume.revision,
+        markdown: markdown + "\n\n<strong>更新</strong>",
+      },
+    });
+    assert.notEqual(result.isError, true);
+    const saved = store.get(resume.id)!;
+    const invalid = '<img src="/local-photo.png">';
+    const rejected = await app.request(`/api/resumes/${resume.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ revision: saved.revision, markdown: invalid }),
+    });
+    assert.equal(rejected.status, 400);
+    assert.match(await rejected.text(), /图片只支持完整/);
+    const mcpRejected = await rpc(app, "tools/call", {
+      name: "update_resume",
+      arguments: { id: resume.id, revision: saved.revision, markdown: invalid },
+    });
+    assert.equal(mcpRejected.isError, true);
+    assert.deepEqual(store.get(resume.id), saved);
+  } finally {
+    store.close();
+  }
+});
 
 test("REST and MCP reject empty updates and missing export languages without writes", async () => {
   const store = createStore(":memory:");
@@ -149,7 +193,10 @@ test("MCP discovery includes language replacement and revision instructions", as
   const store = createStore(":memory:");
   try {
     const result = await rpc(createApp(store), "tools/list", {});
-    assert.equal(result.tools.length, 11);
+    assert.equal(result.tools.length, 12);
+    assert.ok(
+      result.tools.some((tool) => tool.name === "list_resume_templates"),
+    );
     const properties = result.tools.find(
       (tool) => tool.name === "update_resume",
     )!.inputSchema.properties;

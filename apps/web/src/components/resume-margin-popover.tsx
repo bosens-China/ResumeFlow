@@ -89,13 +89,13 @@ export function ResumeMarginPopover({
       (vertical === horizontal && p.value === `${vertical}mm`),
   );
 
-  let triggerLabel = `边距: ${vertical}mm`;
+  let triggerLabel = `内边距: ${vertical}mm`;
   if (matchedPreset) {
-    triggerLabel = `边距: ${matchedPreset.name} (${matchedPreset.badge})`;
+    triggerLabel = `内边距: ${matchedPreset.name} (${matchedPreset.badge})`;
   } else if (vertical !== horizontal) {
-    triggerLabel = `边距: 上下${vertical} 左右${horizontal}mm`;
+    triggerLabel = `内边距: 上下${vertical} 左右${horizontal}mm`;
   } else {
-    triggerLabel = `边距: ${vertical}mm`;
+    triggerLabel = `内边距: ${vertical}mm`;
   }
 
   return (
@@ -105,7 +105,7 @@ export function ResumeMarginPopover({
           variant="outline"
           size="sm"
           className="h-8 gap-1.5 px-2.5 text-xs font-medium cursor-pointer"
-          aria-label="选择简历页边距"
+          aria-label="选择简历内边距"
         >
           <Sliders className="size-3.5 text-muted-foreground" />
           <span className="hidden sm:inline">{triggerLabel}</span>
@@ -119,7 +119,7 @@ export function ResumeMarginPopover({
         className="w-72 p-2 shadow-lg"
       >
         <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1 flex items-center justify-between">
-          <span>页边距预设 (10-20mm)</span>
+          <span>内边距预设 (10-20mm)</span>
           <span className="text-[10px] text-muted-foreground/70">A4 留白</span>
         </DropdownMenuLabel>
 
@@ -201,7 +201,7 @@ export function ResumeMarginPopover({
                   disabled={vertical <= 6}
                   onClick={() => updateVertical(vertical - 1)}
                   className="size-6 shrink-0 cursor-pointer"
-                  aria-label="减少上下边距"
+                  aria-label="减少上下内边距"
                 >
                   <Minus className="size-3" />
                 </Button>
@@ -220,7 +220,7 @@ export function ResumeMarginPopover({
                   disabled={vertical >= 35}
                   onClick={() => updateVertical(vertical + 1)}
                   className="size-6 shrink-0 cursor-pointer"
-                  aria-label="增加上下边距"
+                  aria-label="增加上下内边距"
                 >
                   <Plus className="size-3" />
                 </Button>
@@ -243,7 +243,7 @@ export function ResumeMarginPopover({
                   disabled={horizontal <= 6}
                   onClick={() => updateHorizontal(horizontal - 1)}
                   className="size-6 shrink-0 cursor-pointer"
-                  aria-label="减少左右边距"
+                  aria-label="减少左右内边距"
                 >
                   <Minus className="size-3" />
                 </Button>
@@ -262,7 +262,7 @@ export function ResumeMarginPopover({
                   disabled={horizontal >= 35}
                   onClick={() => updateHorizontal(horizontal + 1)}
                   className="size-6 shrink-0 cursor-pointer"
-                  aria-label="增加左右边距"
+                  aria-label="增加左右内边距"
                 >
                   <Plus className="size-3" />
                 </Button>

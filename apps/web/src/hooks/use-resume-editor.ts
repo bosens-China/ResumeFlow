@@ -33,6 +33,7 @@ export function useResumeEditor(resume: Resume) {
   const [languages, setLanguages] = useState(initial.languages);
   const [themeColor, setThemeColor] = useState(initial.themeColor);
   const [margin, setMargin] = useState(initial.margin);
+  const [lineHeight, setLineHeight] = useState(initial.lineHeight ?? 1);
   const [customCss, setCustomCss] = useState(initial.customCss);
   const [cssError, setCssError] = useState<string | null>(null);
   const [isFormattingCss, setIsFormattingCss] = useState(false);
@@ -75,6 +76,7 @@ export function useResumeEditor(resume: Resume) {
     setLanguages(next.languages);
     setThemeColor(next.themeColor);
     setMargin(next.margin);
+    setLineHeight(next.lineHeight ?? 1);
     setCustomCss(next.customCss);
     setCssError(null);
     setDirty(false);
@@ -207,8 +209,16 @@ export function useResumeEditor(resume: Resume) {
   }));
 
   useBlocker({
-    shouldBlockFn: async () => !(await save()),
-    enableBeforeUnload: () => dirty || !!saving.current,
+    shouldBlockFn: async () => {
+      if (
+        isDraftModified(lastPublished.current, draft.current) &&
+        !window.confirm("当前有未保存的修改，确定离开吗？")
+      )
+        return true;
+      return !(await save());
+    },
+    enableBeforeUnload: () =>
+      isDraftModified(lastPublished.current, draft.current),
   });
 
   // 编辑时自动防抖暂存
@@ -288,19 +298,23 @@ export function useResumeEditor(resume: Resume) {
     await save();
   }
 
-  const { handleSelectLanguage, handleAddLanguage, handleDeleteLanguage } =
-    useEditorLanguages({
-      draft,
-      name,
-      content,
-      currentLang,
-      setLanguages,
-      setCurrentLang,
-      setName,
-      setContent,
-      checkDirty,
-      save,
-    });
+  const {
+    handleSelectLanguage,
+    handleAddLanguage,
+    handleDeleteLanguage,
+    handleChangeFont,
+  } = useEditorLanguages({
+    draft,
+    name,
+    content,
+    currentLang,
+    setLanguages,
+    setCurrentLang,
+    setName,
+    setContent,
+    checkDirty,
+    save,
+  });
 
   function handleChangeThemeColor(color: string) {
     setThemeColor(color);
@@ -311,6 +325,12 @@ export function useResumeEditor(resume: Resume) {
   function handleChangeMargin(newMargin: string) {
     setMargin(newMargin);
     draft.current.margin = newMargin;
+    checkDirty();
+    void save();
+  }
+  function handleChangeLineHeight(newLineHeight: number) {
+    setLineHeight(newLineHeight);
+    draft.current.lineHeight = newLineHeight;
     checkDirty();
     void save();
   }
@@ -381,6 +401,7 @@ export function useResumeEditor(resume: Resume) {
     languages,
     themeColor,
     margin,
+    lineHeight,
     status,
     saveNotice,
     isDirty: () => dirty,
@@ -396,8 +417,10 @@ export function useResumeEditor(resume: Resume) {
     handleSelectLanguage,
     handleAddLanguage,
     handleDeleteLanguage,
+    handleChangeFont,
     handleChangeThemeColor,
     handleChangeMargin,
+    handleChangeLineHeight,
     useRemote,
     overwriteRemote,
   };

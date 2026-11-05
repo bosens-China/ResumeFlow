@@ -3,11 +3,11 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { DatabaseSync } from "node:sqlite";
-import { test } from "node:test";
+import { test } from "vitest";
 import type { ResumeVersion } from "@resumeflow/shared";
-import { createStore } from "./store.ts";
-import { createApp } from "./app.ts";
-import { closePdfBrowser } from "./pdf.ts";
+import { createStore } from "../store.ts";
+import { createApp } from "../app.ts";
+import { closePdfBrowser } from "../pdf.ts";
 
 test("snapshots survive reopen, preserve all languages and styles, and never change", () => {
   const dir = mkdtempSync(join(tmpdir(), "resumeflow-versions-"));

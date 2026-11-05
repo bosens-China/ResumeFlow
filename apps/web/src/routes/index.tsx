@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import type { ResumeSummary } from "@resumeflow/shared";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { FileText, Plus } from "lucide-react";
+import { FileText, LayoutTemplate, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { HomeHeader } from "@/components/home-header";
 import { ResumeCard } from "@/components/resume-card";
-import { ResumeFlowLogo } from "@/components/resume-flow-logo";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -168,32 +168,18 @@ function ResumeListPage() {
 
   return (
     <div className="min-h-full flex flex-col bg-background">
-      {/* 顶部全局通栏导航栏：与详情页 Header 高度与通栏风格保持完全一致 */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-            <ResumeFlowLogo className="size-4.5" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold tracking-tight text-base">
-              ResumeFlow
-            </span>
-            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-              简流
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <HomeHeader
+        action={
           <Button
             onClick={handleCreate}
-            className="gap-1.5 shadow-sm font-medium"
+            size="sm"
+            className="gap-1.5 shadow-sm font-medium text-xs"
           >
-            <Plus className="size-4" />
+            <Plus className="size-3.5" />
             新建简历
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       {/* 主体通栏内容区：宽度不再局限于窄版，充分利用 PC / 笔记本屏幕 */}
       <main className="flex-1 w-full px-6 lg:px-10 py-8">
@@ -240,13 +226,24 @@ function ResumeListPage() {
             </div>
             <h3 className="text-base font-semibold">暂无简历</h3>
             <p className="mt-1 max-w-sm text-xs text-muted-foreground">
-              点击右上角「新建简历」或下方按钮开始创建你的第一份简历，支持
-              Markdown 实时排版与高保真导出。
+              可以创建空白简历，或者前往「模板中心」选择 AI
+              研发、产品经理等预设模板一键套用。
             </p>
-            <Button onClick={handleCreate} className="mt-4 gap-1.5" size="sm">
-              <Plus className="size-4" />
-              新建第一份简历
-            </Button>
+            <div className="mt-4 flex items-center gap-3">
+              <Button onClick={handleCreate} className="gap-1.5" size="sm">
+                <Plus className="size-4" />
+                新建空白简历
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => void navigate({ to: "/templates" })}
+                className="gap-1.5"
+                size="sm"
+              >
+                <LayoutTemplate className="size-4" />
+                从模板挑选
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

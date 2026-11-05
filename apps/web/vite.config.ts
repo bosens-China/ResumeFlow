@@ -26,25 +26,7 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
   ],
   resolve: {
-    alias: {
-      "@": path.resolve(import.meta.dirname, "src"),
-      "@resumeflow/shared/css-tools": path.resolve(
-        import.meta.dirname,
-        "../../packages/shared/src/css-tools.ts",
-      ),
-      "@resumeflow/shared/markdown": path.resolve(
-        import.meta.dirname,
-        "../../packages/shared/src/markdown.ts",
-      ),
-      "@resumeflow/shared/resume-css": path.resolve(
-        import.meta.dirname,
-        "../../packages/shared/src/resume-css.ts",
-      ),
-      "@resumeflow/shared": path.resolve(
-        import.meta.dirname,
-        "../../packages/shared/src/index.ts",
-      ),
-    },
+    alias: { "@": path.resolve(import.meta.dirname, "src") },
   },
   server: {
     port: 10128,

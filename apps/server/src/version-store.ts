@@ -105,6 +105,7 @@ export function createVersionStore(
           source.themeColor || "",
           source.margin || "",
           source.customCss || "",
+          source.lineHeight ?? null,
           new Date().toISOString(),
           id,
           revision,

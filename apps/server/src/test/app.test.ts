@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
-import { createApp } from "./app.ts";
-import { InvalidMarkdownError, renderMarkdown } from "./markdown.ts";
-import { closePdfBrowser, resumePdf } from "./pdf.ts";
-import { createStore } from "./store.ts";
+import { test } from "vitest";
+import { createApp } from "../app.ts";
+import { InvalidMarkdownError, renderMarkdown } from "../markdown.ts";
+import { closePdfBrowser, resumePdf } from "../pdf.ts";
+import { createStore } from "../store.ts";
 
 test("SQLite survives reopen and rejects stale revisions", () => {
   const dir = mkdtempSync(join(tmpdir(), "resumeflow-"));
@@ -255,13 +255,14 @@ test("PDF endpoint returns a real PDF for the saved revision", async () => {
 test("PDF rejects private image addresses", async () => {
   const store = createStore(":memory:");
   try {
-    await assert.rejects(
-      () =>
-        resumePdf(
-          store.create("禁止私网", "![头像](http://127.0.0.1:9999/image.png)"),
-        ),
-      /图片地址不允许访问/,
-    );
+    for (const markdown of [
+      "![头像](http://127.0.0.1:9999/image.png)",
+      '<img src="http://127.0.0.1:9999/image.png">',
+    ])
+      await assert.rejects(
+        () => resumePdf(store.create("禁止私网", markdown)),
+        /图片地址不允许访问/,
+      );
   } finally {
     store.close();
     await closePdfBrowser();

@@ -1,3 +1,5 @@
+import type { ResumeFontId } from "./resume-fonts.js";
+
 export interface HealthResponse {
   status: "ok";
   time: string;
@@ -10,6 +12,7 @@ export function getResumePdfFilename(title: string, language = "zh") {
 export interface ResumeLanguageItem {
   title?: string;
   markdown: string;
+  font?: ResumeFontId;
 }
 
 export interface Resume {
@@ -20,6 +23,7 @@ export interface Resume {
   languages?: Record<string, ResumeLanguageItem>;
   themeColor?: string;
   margin?: string;
+  lineHeight?: number;
   customCss?: string;
   revision: number;
   createdAt: string;
@@ -48,3 +52,6 @@ export interface ResumeChangedEvent {
 export * from "./css-tools.js";
 export * from "./markdown.js";
 export * from "./resume-css.js";
+export * from "./resume-fonts.js";
+export * from "./templates.js";
+export * from "./templates.js";

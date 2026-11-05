@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { test } from "node:test";
+import { test } from "vitest";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
 import { createApp } from "../../server/src/app.ts";
@@ -16,7 +16,7 @@ const { chromium } = require("playwright") as typeof import("playwright");
 
 test(
   "language drafts survive pending saves and destructive menu operations",
-  { timeout: 30000 },
+  { timeout: 60_000 },
   async () => {
     const store = createStore(":memory:");
     const resume = store.create("中文", "# 中文", {
@@ -47,6 +47,7 @@ test(
       const page = await browser.newPage();
       await page.route("**/api/events", (route) => route.abort());
       await page.goto(`${vite.resolvedUrls!.local[0]}resumes/${resume.id}`);
+      await page.getByRole("button", { name: "展开工具栏" }).click();
       const editor = page.getByRole("textbox", { name: "Markdown 编辑器" });
       await editor.waitFor();
       let gate = new Promise<void>((resolve) => {
