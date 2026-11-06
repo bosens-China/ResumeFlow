@@ -24,7 +24,7 @@ const CURSOR_JSON = `{
 }`;
 
 const CLAUDE_CODE_COMMAND =
-  "claude mcp add resumeflow --type http http://127.0.0.1:8080/mcp";
+  "claude mcp add --transport http resumeflow http://127.0.0.1:8080/mcp";
 
 const CLAUDE_JSON = `{
   "mcpServers": {
@@ -52,6 +52,10 @@ export function AiIntegrationDialog({
   const [clientTab, setClientTab] = useState<"cursor" | "claude" | "codex">(
     "cursor",
   );
+  const httpPrompt = `使用 ResumeFlow 管理我的简历。
+服务地址为 ${window.location.origin}。
+未连接 MCP 时，先读取以下文档，再调用 HTTP API：
+${window.location.origin}/api/openapi.json`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -65,13 +69,13 @@ export function AiIntegrationDialog({
             <span>接入 AI 编程助手与 Agent</span>
           </DialogTitle>
           <DialogDescription className="text-xs leading-normal">
-            ResumeFlow 采用 Skills + MCP 双引擎协同机制：Skills 指引 AI
-            遵循简历排版语法与专业心智，MCP 提供增删改查与 PDF
-            导出的底层工具。二者配合使用，体验最佳。
+            Skill 指引 AI 遵循简历排版与操作规则。MCP
+            为可选接入方式：已连接时优先使用，没有 MCP 时可通过 HTTP API
+            创建、编辑和导出简历。
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2 text-xs">
+        <div className="min-w-0 space-y-4 py-2 text-xs">
           {/* 步骤 1：Skills */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 text-foreground font-medium">
@@ -95,24 +99,58 @@ export function AiIntegrationDialog({
               <span className="flex size-4.5 items-center justify-center rounded-full bg-muted text-[10px] text-muted-foreground">
                 2
               </span>
-              <span>启动本地 Docker 服务（数据与 MCP 协议端点）</span>
+              <span>启动 ResumeFlow 服务（已启动可跳过）</span>
             </div>
             <p className="text-[11px] text-muted-foreground pl-6">
-              启动轻量单容器，内置 SQLite 数据库持久化及 Streamable HTTP MCP
-              服务：
+              Web、HTTP API 和 MCP 共用同一实例，简历数据保存在 Docker
+              数据卷中：
             </p>
             <div className="pl-6">
               <CopyBlock code={DOCKER_COMMAND} language="bash" />
             </div>
           </div>
 
-          {/* 步骤 3：MCP 配置指引 */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2 text-foreground font-medium">
               <span className="flex size-4.5 items-center justify-center rounded-full bg-muted text-[10px] text-muted-foreground">
                 3
               </span>
-              <span>配置 MCP 到主流 AI 工具</span>
+              <span>将服务地址交给 AI</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground pl-6">
+              安装 Skill 后，将以下说明交给具备 HTTP 请求能力的 AI
+              Agent，即可在未连接 MCP 时按接口文档操作。Agent 须能访问该实例。
+            </p>
+            <div className="pl-6 space-y-2">
+              <CopyBlock code={httpPrompt} label="HTTP 接入说明" />
+              <div className="flex gap-3 text-muted-foreground">
+                <a
+                  href="/api/docs"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  查看 Swagger UI
+                </a>
+                <a
+                  href="/api/openapi.json"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  查看 OpenAPI JSON
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* MCP 配置指引 */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-foreground font-medium">
+              <span className="flex size-4.5 items-center justify-center rounded-full bg-muted text-[10px] text-muted-foreground">
+                4
+              </span>
+              <span>配置 MCP（可选）</span>
             </div>
 
             <div className="pl-6 space-y-2">
@@ -184,11 +222,11 @@ export function AiIntegrationDialog({
                     </div>
                     <div className="space-y-1 pt-1">
                       <p className="text-[11px] text-muted-foreground">
-                        方式 B：Claude Desktop 或项目级 <code>.mcp.json</code>
+                        方式 B：Claude Code 项目级 <code>.mcp.json</code>
                       </p>
                       <CopyBlock
                         code={CLAUDE_JSON}
-                        label=".mcp.json / claude_desktop_config.json"
+                        label=".mcp.json"
                         language="json"
                       />
                     </div>

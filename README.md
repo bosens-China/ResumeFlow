@@ -2,11 +2,11 @@
 
 求职时总很难找到称心的简历工具——市面上的平台要么收费，要么功能繁重冗余，往往不符合开发者 **Markdown 优先、现代、简约** 的书写习惯。ResumeFlow 应运而生，致力于让简历撰写与维护变得纯粹高效。
 
-更重要的是，**ResumeFlow 完全是 AI 优先（AI-Native）**：Web 界面具备的所有能力（创建、编辑、排版、多语言管理、样式定制与 PDF 导出），AI 均可通过 MCP 协议完全调用。你甚至无需打开浏览器，直接让 AI Agent 就能为你生成、润色并导出一份高质量的简历。
+**ResumeFlow 面向 AI Agent 设计**：创建、编辑、排版、多语言管理、样式定制与 PDF 导出均可通过 MCP 或 HTTP API 完成，无需打开浏览器。
 
-## AI 接入 (Skills + MCP)
+## AI 接入
 
-ResumeFlow 采用 **Skills + MCP 双引擎** 协同设计：**Skills** 指引 AI 遵循简历排版规则与专业心智，**MCP** 提供增删改查与 PDF 导出的底层工具。
+Skill 指引 AI 遵循简历排版和操作规则。**MCP 为可选接入方式**：已连接时优先使用；没有 MCP 或缺少所需工具时，Skill 会读取实例的 OpenAPI 文档，通过 HTTP API 操作。
 
 ### 1. 安装 Agent Skills（技能工作流）
 
@@ -16,9 +16,20 @@ ResumeFlow 采用 **Skills + MCP 双引擎** 协同设计：**Skills** 指引 AI
 npx skills add bosens-China/ResumeFlow
 ```
 
-### 2. 配置 MCP 服务
+### 2. 提供服务地址
 
-服务启动后（Docker 默认端口为 `8080`，MCP 地址为 `http://127.0.0.1:8080/mcp`），在主流 AI 工具中接入即可：
+按下方说明启动服务后，将实例地址交给具备 HTTP 请求能力的 AI Agent，例如：
+
+```text
+使用 ResumeFlow 管理我的简历，服务地址为 http://127.0.0.1:8080。
+未连接 MCP 时，请先读取 http://127.0.0.1:8080/api/openapi.json，再按文档调用 HTTP API。
+```
+
+[Swagger UI](http://127.0.0.1:8080/api/docs) 供人查看接口，[OpenAPI JSON](http://127.0.0.1:8080/api/openapi.json) 供 Agent 读取。以上为 Docker 示例端口，请替换为实际实例地址；源码开发时后端默认端口为 `10127`。Agent 须能访问该实例。
+
+### 3. 配置 MCP（可选）
+
+希望通过 MCP 工具调用时，将实例的 `/mcp` 地址接入对应客户端。以下使用 Docker 示例地址：
 
 #### Cursor
 
@@ -36,13 +47,13 @@ npx skills add bosens-China/ResumeFlow
 
 > 也可以在 Cursor `Settings > Features > MCP` 中点击“Add New MCP Server”，类型选择 SSE/HTTP，URL 填写 `http://127.0.0.1:8080/mcp`。
 
-#### Claude
+#### Claude Code
 
 - **Claude Code 命令行一键配置**：
   ```bash
-  claude mcp add resumeflow --type http http://127.0.0.1:8080/mcp
+  claude mcp add --transport http resumeflow http://127.0.0.1:8080/mcp
   ```
-- **Claude Desktop / 项目级 `.mcp.json`**：
+- **项目级 `.mcp.json`**：
   ```json
   {
     "mcpServers": {
@@ -81,7 +92,8 @@ docker run -d --name resumeflow \
 容器启动后：
 
 - **Web 界面**：访问 <http://127.0.0.1:8080>
-- **MCP 服务端点**：`http://127.0.0.1:8080/mcp`
+- **接口文档**：`http://127.0.0.1:8080/api/docs`，OpenAPI JSON 位于 `/api/openapi.json`
+- **MCP 服务端点（可选）**：`http://127.0.0.1:8080/mcp`
 
 > 数据保存在 `resumeflow-data` 数据卷中；容器内部端口为 `3000`，宿主机端口 `8080` 可按需替换。
 

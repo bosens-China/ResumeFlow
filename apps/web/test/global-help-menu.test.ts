@@ -63,6 +63,50 @@ test(
       await button.focus();
       await page.keyboard.press("Enter");
       assert.equal(await button.getAttribute("aria-expanded"), "true");
+      await page.getByRole("menuitem", { name: /接入 AI/ }).click();
+      const dialog = page.getByRole("dialog");
+      await dialog.waitFor();
+      const httpInstructions = dialog
+        .getByText("HTTP 接入说明", { exact: true })
+        .locator("../..");
+      const copied: string[] = [];
+      await page.exposeFunction("captureCopiedText", (value: string) =>
+        copied.push(value),
+      );
+      await page.evaluate(() => {
+        Object.defineProperty(navigator, "clipboard", {
+          value: {
+            writeText: (value: string) =>
+              (
+                window as Window & {
+                  captureCopiedText: (value: string) => Promise<void>;
+                }
+              ).captureCopiedText(value),
+          },
+        });
+      });
+      await httpInstructions.getByRole("button", { name: "复制代码" }).click();
+      await page.getByText("已复制到剪贴板", { exact: true }).waitFor();
+      assert.equal(copied.length, 1);
+      const origin = new URL(page.url()).origin;
+      assert.ok(copied[0]!.includes(`${origin}/api/openapi.json`));
+      assert.ok(copied[0]!.includes(`服务地址为 ${origin}`));
+      assert.equal(
+        await dialog
+          .getByRole("link", { name: "查看 Swagger UI" })
+          .getAttribute("href"),
+        "/api/docs",
+      );
+      const specLink = dialog.getByRole("link", { name: "查看 OpenAPI JSON" });
+      const specResponse = await page.request.get(
+        new URL((await specLink.getAttribute("href"))!, origin).href,
+      );
+      assert.equal(specResponse.status(), 200);
+      assert.ok((await specResponse.json()).paths["/api/resumes"]);
+      const overflow = await dialog.evaluate(
+        (element) => element.scrollWidth > element.clientWidth,
+      );
+      assert.equal(overflow, false);
     } finally {
       await browser.close();
       await vite.close();

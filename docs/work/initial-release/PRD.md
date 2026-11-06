@@ -21,7 +21,7 @@
 - 首版以单用户本机 Docker 容器交付；简历数据保存在 SQLite，并通过 Docker 数据卷持久化。容器重建后保留数据。
 - 开发环境直接启动 Vite Web 与 Hono Server 的 dev 服务，分别支持源码热重载；不使用 Docker 开发热重载。生产镜像由 Hono 提供已构建的前端 dist。
 - GitHub Actions 在 PR 上运行检查与容器冒烟测试；`main` 通过验证后由 Google Release Please 维护统一版本 PR。版本 PR 审批合并并通过验证后创建 Release 和标签，将 `linux/amd64`（x86-64）镜像发布为 `boses/resumeflow`；根包、子包和应用版本保持一致。发布任务读取仓库级或 `production` Environment 中的 `DOCKERHUB_TOKEN`。
-- Hono 提供网页所需的数据接口、SSE 变更通知和 MCP 入口。网页与 MCP 调用同一套读写逻辑，以已提交的数据为准。
+- Hono 提供网页与 Agent 共用的 HTTP 数据接口、SSE 变更通知和可选的 MCP 入口。Skill 在未连接 MCP 时按实例 OpenAPI 调用 HTTP；各通道共用读写逻辑，以已提交的数据为准。
 - MCP 使用 Streamable HTTP，通过本机地址连接；Agent 对已提交数据的后续查询返回最新状态。MCP 修改名称或正文后，已打开的网页编辑器和分页预览自动更新。
 
 ### 页面与交互
