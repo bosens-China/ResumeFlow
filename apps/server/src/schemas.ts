@@ -26,7 +26,7 @@ const markdown = z
     }
   })
   .describe(
-    "完整 Markdown 正文，会替换目标语言原文。支持 :::left/center/right、::::row 中的 :::cell 及安全 HTML（含 img，危险标签和属性会被移除）。所有图片必须使用完整 HTTP(S) URL。顶部 h1 后、首个 h2–h6 前的图片默认采用头像裁剪，进入模块后为普通图片；HTML 标题遵循相同规则",
+    "完整 Markdown 正文，会替换目标语言原文。相邻 :::left/center/right 自动按位置同行，相邻 :::cell 自动分栏；可用 ::::row 包裹 cell 指定行边界。支持安全 HTML（含 img，危险标签和属性会被移除）。所有图片必须使用完整 HTTP(S) URL。顶部 h1 后、首个 h2–h6 前的图片默认采用头像裁剪，进入模块后为普通图片；HTML 标题遵循相同规则",
   );
 const font = z
   .enum(RESUME_FONT_IDS)
@@ -49,7 +49,7 @@ const margin = z
   .max(50)
   .optional()
   .describe(
-    "全部语言共用的 CSS 内边距，例如 10mm 或 12mm 15mm；空字符串恢复默认",
+    "全部语言共用的纸张页边距，使用 CSS margin 语法，例如 10mm 或 12mm 15mm；空字符串恢复默认",
   );
 const lineHeight = z
   .number()
@@ -84,7 +84,7 @@ const languages = z
   .record(languageCode, languageItem)
   .optional()
   .describe(
-    "完整语言集合，会整体替换而非合并；遗漏的语言将删除。新增或删除前先 get_resume，保留其他语言，并确保包含 currentLanguage",
+    "完整语言集合，会整体替换而非合并；遗漏的语言将删除。修改前先读取当前简历，保留其他语言，并确保包含 currentLanguage",
   );
 const revision = z
   .number()
@@ -134,12 +134,12 @@ export const updateInput = z
     { message: "缺少修改字段" },
   );
 export const idInput = z.object({
-  id: z.uuid().describe("简历 UUID，可从 list_resumes 或 create_resume 获取"),
+  id: z.uuid().describe("简历 UUID，可从简历列表或创建结果获取"),
 });
 export const versionIdInput = idInput.extend({
   versionId: z
     .uuid()
-    .describe("历史快照 UUID，可从 list_resume_versions 获取；不同于 revision"),
+    .describe("历史快照 UUID，可从历史快照列表获取；不同于 revision"),
 });
 export const deleteInput = z.object({ revision });
 export const pdfInput = versionIdInput.partial({ versionId: true }).extend({

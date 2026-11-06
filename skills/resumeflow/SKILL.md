@@ -57,7 +57,7 @@ description: 使用 ResumeFlow 管理、编辑和导出简历，优先调用已�
 | 恢复快照        | `POST /api/resumes/{id}/versions/{versionId}/restore` |
 | 导出 PDF        | `GET /api/resumes/{id}/pdf`                           |
 
-当前创建和修改的字段包括 `title`、`markdown`、`font`、`languages`、`currentLanguage`、`themeColor`、`margin`、`customCss`。修改另需 `revision`，可用 `language` 指定标题、正文和字体写入语言；创建快照的 JSON 包含 `revision`、`title`，恢复快照的 JSON 包含当前草稿 `revision`。删除的 `revision` 位于查询参数中。
+当前创建和修改的字段包括 `title`、`markdown`、`font`、`languages`、`currentLanguage`、`themeColor`、`margin`、`lineHeight`、`customCss`。修改另需 `revision`，可用 `language` 指定标题、正文和字体写入语言；创建快照的 JSON 包含 `revision`、`title`，恢复快照的 JSON 包含当前草稿 `revision`。删除的 `revision` 位于查询参数中。
 
 当前预设模板只有 MCP 工具，不能假定存在 `/api/templates` 等 HTTP 接口。实例未提供对应接口时说明能力限制；用户也可提供模板正文供创建简历。
 

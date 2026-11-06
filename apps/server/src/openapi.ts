@@ -37,7 +37,7 @@ const conflict = jsonResponse(
   "revision 过期；current 为最新草稿，请读取核对后重试",
 );
 export const validationResponse = {
-  description: "输入无效",
+  description: "输入无效；字段校验失败返回 JSON，JSON 语法错误可能返回纯文本",
   content: {
     "application/json": {
       schema: {
@@ -46,6 +46,7 @@ export const validationResponse = {
         properties: { error: { type: "string" } },
       },
     },
+    "text/plain": { schema: { type: "string" } },
   },
 } satisfies Exclude<
   GenerateSpecOptions["defaultValidationErrorResponse"],
@@ -88,6 +89,8 @@ export const apiDocs = {
   }),
   create: describeRoute({
     summary: "创建简历",
+    description:
+      "提交 JSON 对象；空对象使用默认名称和空正文创建。可通过 languages 提供多语言内容。",
     tags: ["简历"],
     responses: { 201: jsonResponse(resume, "已创建") },
   }),
@@ -99,7 +102,7 @@ export const apiDocs = {
   update: describeRoute({
     summary: "修改简历",
     description:
-      "需当前 revision。languages 整体替换，遗漏语言会被删除；其余未提供的字段保留。",
+      "需当前 revision 及至少一个修改字段。languages 整体替换，遗漏语言会被删除；其余未提供的字段保留。language 仅指定写入语言，currentLanguage 切换当前语言，不自动翻译正文。",
     tags: ["简历"],
     responses: {
       200: jsonResponse(resume, "修改后的草稿"),
@@ -146,6 +149,8 @@ export const apiDocs = {
   }),
   createVersion: describeRoute({
     summary: "以当前草稿创建命名快照",
+    description:
+      "先保存正文和样式，再提交当前 revision 和快照 title。返回的 id 为 versionId；内容未变时复用已有快照。",
     tags: ["历史版本"],
     responses: {
       201: jsonResponse(version, "历史快照；内容未变时返回已有快照"),
@@ -155,6 +160,8 @@ export const apiDocs = {
   }),
   restoreVersion: describeRoute({
     summary: "先归档当前草稿，再从快照开始新草稿",
+    description:
+      "路径 versionId 指定历史快照；JSON 中 revision 为当前草稿修订号。原快照保持不变，返回恢复后的草稿和新 revision。",
     tags: ["历史版本"],
     responses: {
       200: jsonResponse(resume, "恢复后的当前草稿"),
@@ -176,6 +183,8 @@ export const apiDocs = {
   }),
   pdf: describeRoute({
     summary: "导出已保存的简历或历史快照 PDF",
+    description:
+      "直接返回 application/pdf 二进制，不是下载链接或 JSON。导出当前稿建议携带最近读取的 revision；导出快照使用 versionId。下载时设置 download=1，并采用 Content-Disposition 中 UTF-8 filename* 提供的文件名。",
     tags: ["简历"],
     parameters: [
       {
@@ -193,7 +202,8 @@ export const apiDocs = {
       {
         in: "query",
         name: "lang",
-        description: "已有语言代码；省略使用当前语言",
+        description:
+          "已有语言代码；省略使用所选草稿或快照的当前语言，不存在时返回 400",
         schema: { type: "string" },
       },
       {
@@ -218,7 +228,8 @@ export const apiDocs = {
             schema: { type: "string" },
           },
           "Content-Disposition": {
-            description: "预览或带语言后缀的下载文件名",
+            description:
+              "download=1 时为附件，filename* 为 UTF-8 文件名：zh 使用标题.pdf，其他语言使用标题_语言代码.pdf；快照采用快照中的标题",
             schema: { type: "string" },
           },
         },

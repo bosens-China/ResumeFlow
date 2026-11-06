@@ -216,7 +216,7 @@ export function createApp(store = createStore()) {
           title: "ResumeFlow API",
           version: APP_VERSION,
           description:
-            "本机单用户简历、历史版本与 PDF 接口。MCP 使用 /mcp，通过协议发现工具。",
+            "本机单用户简历、语言、样式、历史快照与 PDF 的 HTTP API，无需连接 MCP。JSON 请求使用 Content-Type: application/json；修改、删除和快照操作先读取当前 revision，409 时核对 current 后再重试。MCP 为可选的 /mcp 协议入口。",
         },
       },
       exclude: ["/api/docs", "/api/openapi.json", "/mcp"],
