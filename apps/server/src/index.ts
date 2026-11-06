@@ -12,6 +12,7 @@ const webRoot = resolve(import.meta.dirname, "../../web/dist");
 
 if (process.env.NODE_ENV === "production") {
   app.get("/*", serveStatic({ root: webRoot }));
+  app.get("/templates", serveStatic({ root: webRoot, path: "index.html" }));
   app.get(
     "/resumes/:resumeId",
     serveStatic({ root: webRoot, path: "index.html" }),
