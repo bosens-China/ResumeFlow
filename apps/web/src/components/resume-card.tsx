@@ -4,7 +4,9 @@ import { Link } from "@tanstack/react-router";
 import {
   Clock,
   Copy,
+  Download,
   Languages,
+  LoaderCircle,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -20,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatDateTime, getLanguageName } from "@/lib/format";
+import { useResumeExport } from "@/hooks/use-resume-export";
 
 export function ResumeCard({
   resume,
@@ -32,6 +35,10 @@ export function ResumeCard({
   handleDuplicate: (resume: ResumeSummary, event: MouseEvent) => void;
   openDelete: (resume: ResumeSummary, event: MouseEvent) => void;
 }) {
+  const { exportPdf, exporting } = useResumeExport(resume.id, null, () => ({
+    draft: resume,
+    revision: resume.revision,
+  }));
   const currentLang = resume.currentLanguage ?? "zh";
   const item = resume.languages?.[currentLang];
   const activeTitle = (item?.title ?? resume.title).trim();
@@ -88,9 +95,14 @@ export function ResumeCard({
                       variant="ghost"
                       size="icon"
                       className="size-7 cursor-pointer text-muted-foreground/70 hover:bg-muted hover:text-foreground transition-colors"
-                      aria-label="操作菜单"
+                      aria-label={exporting ? "正在导出 PDF" : "操作菜单"}
+                      disabled={exporting}
                     >
-                      <MoreHorizontal className="size-4" />
+                      {exporting ? (
+                        <LoaderCircle className="size-4 animate-spin" />
+                      ) : (
+                        <MoreHorizontal className="size-4" />
+                      )}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-36">
@@ -107,6 +119,16 @@ export function ResumeCard({
                     >
                       <Copy className="size-3.5" />
                       创建副本
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void exportPdf();
+                      }}
+                      className="gap-2 text-xs cursor-pointer"
+                    >
+                      <Download className="size-3.5" />
+                      导出 PDF
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem

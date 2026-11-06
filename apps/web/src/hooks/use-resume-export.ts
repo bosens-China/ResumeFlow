@@ -1,23 +1,26 @@
 import { useState } from "react";
-import { getResumePdfFilename } from "@resumeflow/shared";
+import { getResumePdfFilename, type Resume } from "@resumeflow/shared";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import type { DraftState } from "@/lib/resume-draft";
 
 export function useResumeExport(
   id: string,
-  save: () => Promise<boolean>,
-  getSource: () => { draft: DraftState; revision: number; versionId?: string },
+  save: (() => Promise<boolean>) | null,
+  getSource: () => {
+    draft: Pick<Resume, "title" | "currentLanguage" | "languages">;
+    revision: number;
+    versionId?: string;
+  },
 ) {
   const [exportError, setExportError] = useState("");
   const [exporting, setExporting] = useState(false);
 
   async function exportPdf(language?: string) {
-    if (!(await save())) return;
+    if (save && !(await save())) return;
     setExporting(true);
     setExportError("");
     const { draft, revision, versionId } = getSource();
-    const lang = language ?? draft.currentLanguage;
+    const lang = language ?? draft.currentLanguage ?? "zh";
     try {
       const response = await api.api.resumes[":id"].pdf.$get({
         param: { id },
@@ -29,7 +32,7 @@ export function useResumeExport(
       });
       if (!response.ok)
         throw new Error(((await response.json()) as { error: string }).error);
-      const title = draft.languages[lang]?.title || draft.title;
+      const title = draft.languages?.[lang]?.title || draft.title;
       const url = URL.createObjectURL(await response.blob());
       Object.assign(document.createElement("a"), {
         href: url,

@@ -111,10 +111,16 @@ test("MCP exposes the same resume operations and revision protection", async () 
       (await call("export_resume_pdf", { id: copy.id })).content[0]!.text,
     ) as { url: string; revision: number };
     assert.equal(exported.revision, updated.revision);
+    assert.equal(new URL(exported.url).searchParams.get("download"), "1");
     const pdf = await app.request(exported.url, {
       headers: { Host: "localhost" },
     });
     assert.equal(pdf.status, 200);
+    assert.ok(
+      pdf.headers
+        .get("content-disposition")
+        ?.endsWith(encodeURIComponent(`${updated.title}.pdf`)),
+    );
     assert.equal(
       new TextDecoder().decode((await pdf.arrayBuffer()).slice(0, 5)),
       "%PDF-",
