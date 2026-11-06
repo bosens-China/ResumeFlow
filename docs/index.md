@@ -8,3 +8,7 @@
 
 - [首版产品需求](./work/initial-release/PRD.md)
 - [首版实施任务](./work/initial-release/TODO.md)
+
+## 其他文档
+
+- [版本与发布](./releasing.md)

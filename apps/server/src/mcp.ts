@@ -1,6 +1,7 @@
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod/v4";
 import { RESUME_TEMPLATES } from "@resumeflow/shared";
+import { APP_VERSION } from "./app-version.ts";
 import { duplicateResume, type ResumeStore } from "./store.ts";
 import {
   getPdfSource,
@@ -20,7 +21,7 @@ import {
 
 export function mcpHandler(store: ResumeStore) {
   return createMcpHandler(({ requestInfo }) => {
-    const server = new McpServer({ name: "resumeflow", version: "0.1.0" });
+    const server = new McpServer({ name: "resumeflow", version: APP_VERSION });
     const text = (value: unknown) => ({
       content: [{ type: "text" as const, text: JSON.stringify(value) }],
     });

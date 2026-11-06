@@ -26,6 +26,7 @@ import { pagedScriptPath, resumePdf } from "./pdf.ts";
 import { readResumeFont } from "./fonts.ts";
 import { requestLogger } from "./logger.ts";
 import { apiDocs, validationResponse } from "./openapi.ts";
+import { APP_VERSION } from "./app-version.ts";
 
 const pagedScript = readFileSync(pagedScriptPath);
 export const serverPort = Number(
@@ -213,7 +214,7 @@ export function createApp(store = createStore()) {
       documentation: {
         info: {
           title: "ResumeFlow API",
-          version: "0.1.0",
+          version: APP_VERSION,
           description:
             "本机单用户简历、历史版本与 PDF 接口。MCP 使用 /mcp，通过协议发现工具。",
         },

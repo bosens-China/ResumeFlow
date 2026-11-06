@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "vitest";
 import type { generateSpecs } from "hono-openapi";
 import { createApp } from "../app.ts";
@@ -16,6 +17,13 @@ test("Swagger serves a spec covering REST routes and shared input schemas", asyn
       ReturnType<typeof generateSpecs>
     >;
     assert.match(spec.openapi, /^3\./);
+    const rootPackage = JSON.parse(
+      readFileSync(
+        new URL("../../../../package.json", import.meta.url),
+        "utf8",
+      ),
+    );
+    assert.equal(spec.info.version, rootPackage.version);
     for (const route of app.routes) {
       if (
         route.method === "ALL" ||

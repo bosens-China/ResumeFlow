@@ -103,6 +103,10 @@ docker run -d --name resumeflow \
 
 REST/MCP 可用 `font` 设置目标语言字体，例如更新参数：`{ "revision": 1, "language": "en", "font": "inter" }`。完整语言集合使用 `languages.en.font`；可用 ID 和默认规则以实例的 OpenAPI/MCP schema 为准。
 
+## 版本与发布
+
+采用 Google Release Please 维护统一版本 PR，审批合并后发布 GitHub Release 和 Docker 镜像。只维护根包版本，子包自动跟随；必要的仓库设置见[发布说明](docs/releasing.md)。
+
 ## 开源协议
 
 本项目采用 [MIT](LICENSE) 许可证开源。
