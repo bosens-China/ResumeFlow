@@ -172,7 +172,7 @@ export function GlobalHelpMenu() {
                 "size-9 rounded-full border border-border/80 bg-background/90 shadow-md backdrop-blur-md transition-shadow select-none",
                 isDragging
                   ? "cursor-grabbing shadow-xl scale-105"
-                  : "cursor-grab hover:scale-105 hover:bg-accent hover:shadow-lg",
+                  : "cursor-pointer hover:scale-105 hover:bg-accent hover:shadow-lg",
               )}
               aria-label="帮助、反馈与 AI 接入 (可拖拽)"
               title="点击打开菜单，可自由拖拽位置"

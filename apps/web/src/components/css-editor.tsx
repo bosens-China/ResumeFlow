@@ -1,7 +1,11 @@
-import CodeMirror from "@uiw/react-codemirror";
+import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { css } from "@codemirror/lang-css";
 import { AlertCircle, Check, Info, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const editorFont = EditorView.theme({
+  ".cm-scroller": { fontFamily: "var(--font-mono)" },
+});
 
 const CLASS_TIPS = [
   { name: ".rf-root", desc: "简历根容器" },
@@ -63,7 +67,7 @@ export function CssEditor({
         <CodeMirror
           value={value}
           height="100%"
-          extensions={[css()]}
+          extensions={[css(), editorFont]}
           onChange={onChange}
           placeholder={`/* 在此处输入自定义 CSS，示例：\n.rf-root {\n  font-family: serif;\n}\n.rf-h2 {\n  border-bottom: 2px dashed var(--rf-theme-color, #000000);\n  text-transform: uppercase;\n}\n.rf-p {\n  line-height: 1.6;\n}\n*/`}
           basicSetup={{
