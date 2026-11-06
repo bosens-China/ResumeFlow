@@ -80,6 +80,28 @@ jobs:
           assert.equal(pdf.status, 200);
           assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
           JS
+          docker exec -i -w /app/apps/server resumeflow-ci node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { RESUME_FONTS } from '@resumeflow/shared/resume-fonts';
+          import { createStore } from './dist/store.js';
+          import { closePdfBrowser, resumePdf } from './dist/pdf.js';
+          const store = createStore(':memory:');
+          const expectedFonts = [/SourceHanSansSC/, /AlibabaPuHuiTi/, /MiSans/, /HarmonyOS_Sans_SC/, /Inter/, /PingFangSC/];
+          try {
+            for (const [index, font] of RESUME_FONTS.entries()) {
+              const markdown = '# 简历 Resume 🚀\n\n## 工作经历\n\n' + '- 软件工程师 **React 2026**，业绩提升 35%。\n'.repeat(100);
+              const resume = store.create(font.name, markdown, { font: font.id });
+              const pdf = await resumePdf(resume);
+              assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
+              const content = pdf.toString('latin1');
+              assert.match(content, expectedFonts[index]);
+              assert.ok((content.match(/\/Type \/Page\b/g) ?? []).length >= 2, font.id);
+            }
+          } finally {
+            await closePdfBrowser();
+            store.close();
+          }
+          JS
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

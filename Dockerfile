@@ -20,6 +20,7 @@ COPY --from=build /app/apps/web/dist /app/apps/web/dist
 RUN /app/apps/server/node_modules/.bin/playwright install --with-deps --only-shell chromium \
     && apt-get update \
     && apt-get install -y --no-install-recommends fonts-noto-cjk \
+    && apt-get purge -y --auto-remove xvfb \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir /data \
     && chown node:node /data
