@@ -37,6 +37,7 @@ test(
     const vite = await createServer({
       root: fileURLToPath(new URL("..", import.meta.url)),
       server: {
+        host: "127.0.0.1",
         port: 0,
         proxy: { "/api": `http://127.0.0.1:${address.port}` },
       },
@@ -202,6 +203,7 @@ test(
     const vite = await createServer({
       root: fileURLToPath(new URL("..", import.meta.url)),
       server: {
+        host: "127.0.0.1",
         port: 0,
         proxy: { "/api": `http://127.0.0.1:${address.port}` },
       },
