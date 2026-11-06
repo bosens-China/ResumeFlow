@@ -74,7 +74,7 @@ description: 使用 ResumeFlow 管理、编辑和导出简历，优先调用已�
 
 ## 排版、头像与图片
 
-编写或修改对齐、分栏、头像、图片及相关 CSS 时，先读 [排版与图片规则](references/markdown-layout.md)。其中给出 Markdown、安全 HTML（含 `<img>`）示例及 PDF 图片限制。当前支持 `:::left/center/right` 和 `::::row` 配合 `:::cell`；所有图片须使用完整 HTTP(S) URL。仅顶部 h1 后、首个 h2–h6 前的图片自动采用头像样式，进入模块后按普通图片显示；HTML 标题遵循相同规则。
+编写或修改对齐、分栏、头像、图片及相关 CSS 时，先读 [排版与图片规则](references/markdown-layout.md)。相邻 `:::left/center/right` 自动同行，按位置排列，书写顺序不限；相邻 `:::cell` 按首左、末右、其余居中自动分栏，支持四项及更多。正文、标题、重复位置或切换分组类型结束当前行，空行不结束分组；需要明确行边界时使用 `::::row` 包裹 cell。所有图片须使用完整 HTTP(S) URL。仅顶部 h1 后、首个 h2–h6 前的图片自动采用头像样式，进入模块后按普通图片显示；HTML 标题遵循相同规则。
 
 ## PDF 交付
 

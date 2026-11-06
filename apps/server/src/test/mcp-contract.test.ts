@@ -33,6 +33,33 @@ async function rpc(
   };
 }
 
+test("REST and MCP accept implicit position rows and four adjacent cells", async () => {
+  const store = createStore(":memory:");
+  try {
+    const app = createApp(store);
+    const markdown = ":::right\n日期\n:::\n\n:::left\n岗位\n:::";
+    const created = await app.request("/api/resumes", {
+      method: "POST",
+      headers: { Host: "localhost", "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "自动排版", markdown }),
+    });
+    assert.equal(created.status, 201);
+    const resume = await created.json();
+    const cells = Array.from(
+      { length: 4 },
+      (_, index) => `:::cell\n第${index}项\n:::`,
+    ).join("\n\n");
+    const updated = await rpc(app, "tools/call", {
+      name: "update_resume",
+      arguments: { id: resume.id, revision: resume.revision, markdown: cells },
+    });
+    assert.notEqual(updated.isError, true);
+    assert.equal(store.get(resume.id)!.markdown, cells);
+  } finally {
+    store.close();
+  }
+});
+
 test("REST and MCP accept HTML and reject invalid HTML image URLs without writes", async () => {
   const store = createStore(":memory:");
   try {

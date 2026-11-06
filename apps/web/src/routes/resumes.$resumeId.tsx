@@ -9,6 +9,7 @@ import { CssEditor } from "@/components/css-editor";
 import { ResumeEditorFooter } from "@/components/resume-editor-footer";
 import { ResumeEditorIconRail } from "@/components/resume-editor-icon-rail";
 import { ResumeExportButton } from "@/components/resume-export-button";
+import { ResumeLayoutMenu } from "@/components/resume-layout-menu";
 import { getResumeFont } from "@resumeflow/shared/resume-fonts";
 import { type PreviewStatus, ResumePreview } from "@/components/resume-preview";
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,7 @@ function ResumeDetailPage() {
   );
   const [isDragging, setIsDragging] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+  const markdownRef = useRef<HTMLTextAreaElement>(null);
 
   // 快捷键 Cmd+S / Ctrl+S 触发保存
   useKeyPress(["meta.s", "ctrl.s"], (e) => {
@@ -217,7 +219,7 @@ function ResumeDetailPage() {
           }}
           className="relative flex min-h-0 flex-col border-r bg-background shrink-0"
         >
-          <div className="flex h-9 items-center justify-between border-b bg-muted/20 px-3 shrink-0">
+          <div className="flex min-h-9 flex-wrap items-center justify-between gap-1 border-b bg-muted/20 px-3 py-1 shrink-0">
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -248,10 +250,17 @@ function ResumeDetailPage() {
                 )}
               </button>
             </div>
+            {activeTab === "markdown" && (
+              <ResumeLayoutMenu
+                editorRef={markdownRef}
+                onChange={editor.updateMarkdown}
+              />
+            )}
           </div>
 
           {activeTab === "markdown" ? (
             <Textarea
+              ref={markdownRef}
               value={editor.content}
               onChange={(e) => editor.updateMarkdown(e.target.value)}
               spellCheck={false}

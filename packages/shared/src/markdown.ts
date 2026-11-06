@@ -11,6 +11,7 @@ import rehypeSanitize, {
   type Options as SanitizeOptions,
 } from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
+import { automaticLayouts } from "./markdown-layout.js";
 import {
   htmlLayout,
   InvalidMarkdownError,
@@ -21,7 +22,7 @@ export { InvalidMarkdownError } from "./html-rules.js";
 
 function markdownRules() {
   return (tree: Root) => {
-    visit(tree, (node, _index, parent) => {
+    visit(tree, (node) => {
       if (
         !["containerDirective", "leafDirective", "textDirective"].includes(
           node.type,
@@ -41,7 +42,7 @@ function markdownRules() {
       if (name === "row") {
         const cells = directive.children ?? [];
         if (
-          ![2, 3].includes(cells.length) ||
+          cells.length === 0 ||
           !cells.every(
             (cell) =>
               cell.type === "containerDirective" &&
@@ -49,16 +50,8 @@ function markdownRules() {
               cell.name === "cell",
           )
         )
-          throw new InvalidMarkdownError("row 必须包含两个或三个 cell", line);
-      } else if (name === "cell") {
-        if (
-          parent?.type !== "containerDirective" ||
-          !("name" in parent) ||
-          parent.name !== "row"
-        ) {
-          throw new InvalidMarkdownError("cell 只能放在 row 内", line);
-        }
-      } else if (!["left", "center", "right"].includes(name)) {
+          throw new InvalidMarkdownError("row 必须包含至少一个 cell", line);
+      } else if (!["cell", "left", "center", "right"].includes(name)) {
         throw new InvalidMarkdownError(`不支持 ${name} 指令`, line);
       }
 
@@ -98,6 +91,7 @@ const processor = unified()
   .use(remarkParse)
   .use(remarkGfm)
   .use(remarkDirective)
+  .use(automaticLayouts)
   .use(markdownRules)
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeRaw)
@@ -112,6 +106,23 @@ const processor = unified()
 export function renderMarkdown(markdown: string): string {
   const html = String(processor.processSync(markdown));
   return `<div class="rf-root">${html}</div>`;
+}
+
+export function getLayoutInsertionOffset(markdown: string, offset: number) {
+  let insertion = offset;
+  visit(processor.parse(markdown), (node) => {
+    if (node.type !== "containerDirective") return;
+    const start = node.position?.start.offset;
+    const end = node.position?.end.offset;
+    if (
+      start !== undefined &&
+      end !== undefined &&
+      start <= offset &&
+      offset < end
+    )
+      insertion = Math.max(insertion, end);
+  });
+  return insertion;
 }
 
 /** 基于 Markdown 内容与排版规则智能预估 A4 纸张页数 */

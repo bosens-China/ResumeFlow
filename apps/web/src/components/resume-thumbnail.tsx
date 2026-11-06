@@ -61,7 +61,8 @@ export function ResumeThumbnail({ resume }: { resume: ResumeSummary }) {
           margin: resume.margin,
           lineHeight: resume.lineHeight,
           customCss: resume.customCss,
-        })}</style></head><body>${parsedHtml}</body></html>`}
+        })}
+html,body{overflow:hidden!important}</style></head><body>${parsedHtml}</body></html>`}
         style={{
           width: A4_WIDTH,
           height: 1123,

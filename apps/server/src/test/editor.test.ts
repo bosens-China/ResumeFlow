@@ -21,10 +21,10 @@ test("alignment and line breaks follow explicit Markdown syntax", () => {
   assert.match(html, /<div class="rf-center">/);
   assert.match(html, /<div class="rf-row rf-row-2">/);
   assert.doesNotMatch(renderMarkdown("第一行\n第二行"), /<br>/);
-  const separate = renderMarkdown(":::left\n左\n:::\n\n:::right\n右\n:::");
-  assert.match(separate, /class="rf-left"/);
-  assert.match(separate, /class="rf-right"/);
-  assert.doesNotMatch(separate, /class="rf-row/);
+  const combined = renderMarkdown(":::right\n右\n:::\n\n:::left\n左\n:::");
+  assert.match(combined, /class="rf-left"/);
+  assert.match(combined, /class="rf-right"/);
+  assert.match(combined, /class="rf-row rf-row-2"/);
   for (const code of [
     "```md\n::: left\n\n示例\n:::\n```",
     "    ::: left\n    示例\n    :::",

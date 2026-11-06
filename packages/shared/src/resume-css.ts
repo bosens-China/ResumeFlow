@@ -8,8 +8,8 @@ import {
 /** 网页分页预览和服务端 PDF 共用的纸张样式。 */
 export const resumeContentCss = `
 /* 标题层次体系 */
-h1, .rf-h1 { margin: 0 0 calc(3.5mm * var(--rf-spacing-ratio, 1)); font-size: 18pt; font-weight: 700; line-height: calc(1.2 * var(--rf-line-height-ratio, 1)); letter-spacing: -0.01em; }
-h2, .rf-h2 { margin: calc(4.2mm * var(--rf-spacing-ratio, 1)) 0 calc(1.8mm * var(--rf-spacing-ratio, 1)); padding-bottom: 0.8mm; border-bottom: 1px solid var(--rf-theme-color, #1f2937); font-size: 12.5pt; font-weight: 600; line-height: calc(1.25 * var(--rf-line-height-ratio, 1)); }
+h1, .rf-h1 { margin: 0 0 calc(2.5mm * var(--rf-spacing-ratio, 1)); font-size: 20pt; font-weight: 700; line-height: calc(1.2 * var(--rf-line-height-ratio, 1)); letter-spacing: -0.01em; }
+h2, .rf-h2 { margin: calc(4.5mm * var(--rf-spacing-ratio, 1)) 0 calc(1.6mm * var(--rf-spacing-ratio, 1)); padding-bottom: 0.8mm; border-bottom: 1px solid color-mix(in srgb, var(--rf-theme-color, #1f2937) 22%, transparent); font-size: 11.5pt; font-weight: 600; line-height: calc(1.3 * var(--rf-line-height-ratio, 1)); }
 h2:first-of-type, .rf-h2:first-of-type { margin-top: calc(3.2mm * var(--rf-spacing-ratio, 1)); }
 h3, .rf-h3 { margin: calc(2.2mm * var(--rf-spacing-ratio, 1)) 0 calc(0.8mm * var(--rf-spacing-ratio, 1)); font-size: 10.5pt; font-weight: 600; line-height: calc(1.3 * var(--rf-line-height-ratio, 1)); }
 h4, .rf-h4 { margin: calc(1.8mm * var(--rf-spacing-ratio, 1)) 0 calc(0.6mm * var(--rf-spacing-ratio, 1)); font-size: 10pt; font-weight: 600; line-height: calc(1.35 * var(--rf-line-height-ratio, 1)); color: #374151; }
@@ -17,7 +17,7 @@ h5, .rf-h5 { margin: calc(1.4mm * var(--rf-spacing-ratio, 1)) 0 calc(0.5mm * var
 h6, .rf-h6 { margin: calc(1.2mm * var(--rf-spacing-ratio, 1)) 0 calc(0.4mm * var(--rf-spacing-ratio, 1)); font-size: 9pt; font-weight: 600; line-height: calc(1.35 * var(--rf-line-height-ratio, 1)); color: #6b7280; }
 
 /* 文本与段落 */
-p, .rf-p { margin: calc(0.6mm * var(--rf-spacing-ratio, 1)) 0; line-height: calc(1.5 * var(--rf-line-height-ratio, 1)); }
+p, .rf-p { margin: calc(1mm * var(--rf-spacing-ratio, 1)) 0; line-height: calc(1.5 * var(--rf-line-height-ratio, 1)); }
 a, .rf-link { color: inherit; text-decoration: none; }
 strong, b { font-weight: 600; }
 
@@ -34,11 +34,10 @@ li::marker { color: #4b5563; }
 .rf-left { text-align: left; }
 .rf-center { text-align: center; }
 .rf-right { text-align: right; }
-.rf-row { display: grid; align-items: baseline; gap: 3mm; margin: calc(0.6mm * var(--rf-spacing-ratio, 1)) 0; }
-.rf-row-2 { grid-template-columns: minmax(0, 1fr) auto; }
-.rf-row-3 { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
-.rf-row-2 .rf-cell:last-child, .rf-row-3 .rf-cell:last-child { text-align: right; }
-.rf-row-3 .rf-cell:nth-child(2) { text-align: center; }
+.rf-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: baseline; gap: 3mm; margin: calc(0.6mm * var(--rf-spacing-ratio, 1)) 0; }
+.rf-row > .rf-cell { min-width: 0; text-align: center; }
+.rf-row > .rf-cell:first-child { text-align: left; }
+.rf-row > .rf-cell:last-child:not(:first-child) { text-align: right; }
 .rf-cell > :first-child { margin-top: 0; }
 .rf-cell > :last-child { margin-bottom: 0; }
 
@@ -105,7 +104,7 @@ export function getResumePageCss(options?: ResumeStyleOptions): string {
   const customCss = options?.customCss?.trim();
   const rootVars = `:root { --rf-theme-color: ${themeColor}; --rf-line-height-ratio: ${ratio}; --rf-spacing-ratio: ${ratio}; }`;
   const themeCss = `
-h2, .rf-h2 { color: var(--rf-theme-color); border-bottom-color: var(--rf-theme-color); }
+h2, .rf-h2 { color: var(--rf-theme-color); }
 blockquote, .rf-blockquote { border-left-color: var(--rf-theme-color); }
 `;
   const userCss = customCss ? `\n/* 自定义样式 */\n${customCss}\n` : "";
