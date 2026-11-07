@@ -217,11 +217,21 @@ test(
       });
       await page.goto(`${vite.resolvedUrls!.local[0]}resumes/${resume.id}`);
       const editor = page.getByRole("textbox", { name: "Markdown 编辑器" });
+      const replaceMarkdown = async (value: string) => {
+        await editor.press("ControlOrMeta+A");
+        await page.keyboard.insertText(value);
+        assert.equal(await editor.innerText(), value);
+      };
       const saveButton = page.getByRole("button", {
         name: "保存并发布版本 (⌘S)",
       });
       const versionUrl = `**/api/resumes/${resume.id}/versions`;
-      await editor.fill("# 发布的正文");
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[aria-label="Markdown 编辑器"]')
+            ?.textContent === "# 初稿",
+      );
+      await replaceMarkdown("# 发布的正文");
       await page.route(versionUrl, async (route) => {
         if (route.request().method() === "POST") {
           await route.fulfill({
@@ -271,7 +281,7 @@ test(
         await gate;
         await route.fulfill({ response });
       });
-      await editor.fill("# 第二次发布");
+      await replaceMarkdown("# 第二次发布");
       await saveButton.click();
       await started;
       const title = page.getByPlaceholder("请输入简历名称");
