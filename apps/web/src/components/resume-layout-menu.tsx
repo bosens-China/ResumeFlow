@@ -1,6 +1,7 @@
 import { useRef, type RefObject } from "react";
 import { ChevronDown } from "lucide-react";
 import { getLayoutInsertionOffset } from "@resumeflow/shared/markdown";
+import type { ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -39,17 +40,16 @@ const layouts = [
 
 export function ResumeLayoutMenu({
   editorRef,
-  onChange,
 }: {
-  editorRef: RefObject<HTMLTextAreaElement | null>;
-  onChange: (value: string) => void;
+  editorRef: RefObject<ReactCodeMirrorRef | null>;
 }) {
-  const selection = useRef<{ start: number; length: number } | null>(null);
+  const restoreFocus = useRef(false);
 
   function insert({ columns, cells }: (typeof layouts)[number]) {
-    const textarea = editorRef.current;
-    if (!textarea) return;
-    const { value, selectionStart } = textarea;
+    const view = editorRef.current?.view;
+    if (!view) return;
+    const value = view.state.doc.toString();
+    const selectionStart = view.state.selection.main.from;
     const offset = getLayoutInsertionOffset(value, selectionStart);
     const before = value.slice(0, offset);
     const after = value.slice(offset);
@@ -57,11 +57,13 @@ export function ResumeLayoutMenu({
     const suffix = after && !after.startsWith("\n\n") ? "\n\n" : "";
     const content = cells[0][1];
     const snippet = `::::row${columns ? `{columns="${columns}"}` : ""}\n${cells.map(([align, text]) => `:::cell{align="${align}"}\n${text}\n:::`).join("\n\n")}\n::::`;
-    selection.current = {
-      start: before.length + prefix.length + snippet.indexOf(content),
-      length: content.length,
-    };
-    onChange(before + prefix + snippet + suffix + after);
+    const start = before.length + prefix.length + snippet.indexOf(content);
+    view.dispatch({
+      changes: { from: offset, insert: prefix + snippet + suffix },
+      selection: { anchor: start, head: start + content.length },
+      scrollIntoView: true,
+    });
+    restoreFocus.current = true;
   }
 
   return (
@@ -80,15 +82,10 @@ export function ResumeLayoutMenu({
       <DropdownMenuContent
         align="end"
         onCloseAutoFocus={(event) => {
-          if (selection.current === null) return;
+          if (!restoreFocus.current) return;
           event.preventDefault();
-          const textarea = editorRef.current;
-          textarea?.focus();
-          textarea?.setSelectionRange(
-            selection.current.start,
-            selection.current.start + selection.current.length,
-          );
-          selection.current = null;
+          editorRef.current?.view?.focus();
+          restoreFocus.current = false;
         }}
       >
         {layouts.map((layout) => (

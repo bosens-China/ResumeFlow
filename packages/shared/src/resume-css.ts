@@ -9,7 +9,7 @@ import {
 export const resumeContentCss = `
 /* 标题层次体系 */
 h1, .rf-h1 { margin: 0 0 calc(2.5mm * var(--rf-spacing-ratio, 1)); font-size: 20pt; font-weight: 700; line-height: calc(1.2 * var(--rf-line-height-ratio, 1)); letter-spacing: -0.01em; }
-h2, .rf-h2 { margin: calc(4.5mm * var(--rf-spacing-ratio, 1)) 0 calc(1.6mm * var(--rf-spacing-ratio, 1)); padding-bottom: 0.8mm; border-bottom: 1px solid color-mix(in srgb, var(--rf-theme-color, #1f2937) 22%, transparent); font-size: 11.5pt; font-weight: 600; line-height: calc(1.3 * var(--rf-line-height-ratio, 1)); }
+h2, .rf-h2 { margin: calc(4.5mm * var(--rf-spacing-ratio, 1)) 0 calc(1.6mm * var(--rf-spacing-ratio, 1)); padding-bottom: 0.8mm; border-bottom: 1px solid color-mix(in srgb, var(--rf-theme-color, #1f2937) 35%, transparent); font-size: 11.5pt; font-weight: 600; line-height: calc(1.3 * var(--rf-line-height-ratio, 1)); }
 h2:first-of-type, .rf-h2:first-of-type { margin-top: calc(3.2mm * var(--rf-spacing-ratio, 1)); }
 h3, .rf-h3 { margin: calc(2.2mm * var(--rf-spacing-ratio, 1)) 0 calc(0.8mm * var(--rf-spacing-ratio, 1)); font-size: 10.5pt; font-weight: 600; line-height: calc(1.3 * var(--rf-line-height-ratio, 1)); }
 h4, .rf-h4 { margin: calc(1.8mm * var(--rf-spacing-ratio, 1)) 0 calc(0.6mm * var(--rf-spacing-ratio, 1)); font-size: 10pt; font-weight: 600; line-height: calc(1.35 * var(--rf-line-height-ratio, 1)); color: #374151; }
@@ -62,7 +62,7 @@ img.rf-avatar,
 
 /* 引用、代码、表格、分割线 */
 blockquote, .rf-blockquote { margin: calc(2mm * var(--rf-spacing-ratio, 1)) 0; padding: 1mm 0 1mm 3mm; border-left: 2.5px solid var(--rf-theme-color, #94a3b8); color: #4b5563; background: #f8fafc; border-radius: 0 2px 2px 0; }
-hr, .rf-hr { margin: calc(2.5mm * var(--rf-spacing-ratio, 1)) 0; border: 0; border-top: 1px solid #e2e8f0; }
+hr, .rf-hr { margin: calc(2.5mm * var(--rf-spacing-ratio, 1)) 0; border: 0; border-top: 1px solid color-mix(in srgb, var(--rf-theme-color, #1f2937) 35%, transparent); }
 code, .rf-code { font-size: 0.88em; padding: 0.1em 0.3em; background: #f1f5f9; border-radius: 3px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 pre, .rf-pre { margin: calc(2mm * var(--rf-spacing-ratio, 1)) 0; padding: 2.5mm 3mm; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; overflow-x: auto; font-size: 9pt; line-height: calc(1.4 * var(--rf-line-height-ratio, 1)); }
 table, .rf-table { width: 100%; margin: calc(2mm * var(--rf-spacing-ratio, 1)) 0; border-collapse: collapse; font-size: 9.5pt; }

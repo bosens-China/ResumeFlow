@@ -114,7 +114,7 @@ test(
       await page.reload();
       await editor.waitFor();
       assert.equal(confirmations, 1, "saved content reloads without a dialog");
-      assert.equal(await editor.inputValue(), "# 手动保存的版本");
+      assert.equal(await editor.innerText(), "# 手动保存的版本");
 
       await page.getByPlaceholder("请输入简历名称").fill("未保存的新名称");
       assert.equal(await shouldWarn(), true, "title edits are also protected");
@@ -137,7 +137,7 @@ test(
       assert.equal(closeDialog.type(), "beforeunload");
       await closeDialog.dismiss();
       assert.equal(page.isClosed(), false);
-      assert.equal(await editor.inputValue(), "# 关闭前的修改");
+      assert.equal(await editor.innerText(), "# 关闭前的修改");
 
       page.once("dialog", (confirmation) => confirmation.accept());
       await back.click();

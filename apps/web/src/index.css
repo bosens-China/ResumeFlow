@@ -140,13 +140,81 @@
   }
 }
 
-.resume-editor-cursor,
-.resume-editor-cursor .cm-scroller,
-.resume-editor-cursor .cm-content {
-  cursor:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Cpath d='M7 2h6m-3 0v16m-3 0h6' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M7 2h6m-3 0v16m-3 0h6' fill='none' stroke='%23475569' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")
-      10 10,
-    text;
+/* 全局现代化细滚动条（轻量微透、圆角胶囊、告别 Windows 粗灰滚动条） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--foreground, #000) 18%, transparent)
+    transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(
+    in srgb,
+    var(--foreground, #000) 18%,
+    transparent
+  );
+  border-radius: 9999px;
+  transition: background-color 0.2s ease-in-out;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--foreground, #000) 36%,
+    transparent
+  );
+}
+
+/* 详情专属悬浮滚动条：默认隐藏，鼠标 Hover 时平滑浮现 */
+.hover-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s ease-in-out;
+}
+
+.hover-scrollbar:hover {
+  scrollbar-color: color-mix(in srgb, var(--foreground, #000) 25%, transparent)
+    transparent;
+}
+
+.hover-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.hover-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hover-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.hover-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: color-mix(
+    in srgb,
+    var(--foreground, #000) 25%,
+    transparent
+  );
+}
+
+.hover-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--foreground, #000) 50%,
+    transparent
+  );
 }
 
 /* 简历卡片真实微缩渲染（等比 1:1.414 A4 纸张排版缩放） */
@@ -190,7 +258,8 @@
 .rf-thumbnail-canvas .rf-h2 {
   margin: 4.2mm 0 1.8mm;
   padding-bottom: 0.8mm;
-  border-bottom: 1px solid var(--rf-preview-theme, #111827);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--rf-preview-theme, #111827) 35%, transparent);
   color: var(--rf-preview-theme, #111827);
   font-size: 12.5pt;
   font-weight: 600;
@@ -364,7 +433,8 @@
 .rf-thumbnail-canvas .rf-hr {
   margin: 2.5mm 0;
   border: 0;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid
+    color-mix(in srgb, var(--rf-preview-theme, #111827) 35%, transparent);
 }
 
 .rf-thumbnail-canvas blockquote,

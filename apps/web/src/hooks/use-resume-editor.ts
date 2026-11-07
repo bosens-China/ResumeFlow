@@ -10,16 +10,10 @@ import { toast } from "sonner";
 import { useEditorLanguages } from "./use-editor-languages";
 import { useResumeVersions } from "./use-resume-versions";
 import { useResumeExport } from "./use-resume-export";
-import { restoreResumeVersion } from "@/lib/resume-versions";
-import {
-  ApiError,
-  DEFAULT_RESUME_NAME,
-  getResume,
-  updateResume,
-} from "@/lib/resume-store";
+import { saveResumeDraft } from "@/lib/save-resume-draft";
+import { DEFAULT_RESUME_NAME, getResume } from "@/lib/resume-store";
 import {
   type DraftState,
-  computeResumePatch,
   getInitialDraft,
   isDraftModified,
 } from "@/lib/resume-draft";
@@ -53,6 +47,23 @@ export function useResumeEditor(resume: Resume, onContentReplace: () => void) {
   const conflicting = useRef<Resume | null>(null);
   const saving = useRef<Promise<boolean> | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const save = useCallback(
+    () =>
+      saveResumeDraft({
+        resumeId: resume.id,
+        draft,
+        committed,
+        selectedVersion,
+        conflicting,
+        saving,
+        setStatus,
+        setCssError,
+        setMessage,
+        setRemote,
+        setLanguages,
+      }),
+    [resume.id],
+  );
 
   const showSaveNotice = useCallback((text: string, autoHide = false) => {
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
@@ -64,8 +75,12 @@ export function useResumeEditor(resume: Resume, onContentReplace: () => void) {
 
   const syncStateFromResume = useCallback(
     (target: Resume, viewing = false) => {
-      onContentReplace();
       const next = getInitialDraft(target);
+      if (
+        next.currentLanguage !== draft.current.currentLanguage ||
+        next.markdown !== draft.current.markdown
+      )
+        onContentReplace();
       draft.current = next;
       if (!viewing) {
         committed.current = target;
@@ -99,87 +114,6 @@ export function useResumeEditor(resume: Resume, onContentReplace: () => void) {
   const checkDirty = useCallback(() => {
     setDirty(isDraftModified(lastPublished.current, draft.current));
   }, []);
-
-  const save = useCallback(async (): Promise<boolean> => {
-    if (conflicting.current) return false;
-    if (saving.current) return saving.current;
-
-    const task = (async () => {
-      while (!conflicting.current) {
-        try {
-          const version = selectedVersion.current;
-          if (version) {
-            if (!isDraftModified(version.resume, draft.current)) {
-              setStatus("saved");
-              return true;
-            }
-            committed.current = await restoreResumeVersion(
-              resume.id,
-              version.id,
-              committed.current.revision,
-            );
-            selectedVersion.current = null;
-          }
-          const base = committed.current;
-          const current = draft.current;
-
-          if (current.customCss.trim()) {
-            const cssText = current.customCss;
-            const cssCheck = await formatAndValidateCss(cssText);
-            if (current !== draft.current || current.customCss !== cssText)
-              continue;
-            if (!cssCheck.valid) {
-              setCssError(cssCheck.error);
-              setMessage(`CSS 语法错误: ${cssCheck.error}`);
-              setStatus("error");
-              return false;
-            }
-            setCssError(null);
-            if (cssCheck.formatted !== current.customCss) {
-              current.customCss = cssCheck.formatted;
-              setCustomCss(cssCheck.formatted);
-            }
-          } else {
-            setCssError(null);
-          }
-
-          const { patch, updatedLanguages } = computeResumePatch(base, current);
-          if (Object.keys(patch).length === 0) {
-            setStatus("saved");
-            return true;
-          }
-
-          setStatus("saving");
-          current.languages = updatedLanguages;
-          setLanguages(updatedLanguages);
-          const updated = await updateResume(resume.id, base.revision, patch);
-          committed.current = updated;
-        } catch (cause) {
-          if (
-            cause instanceof ApiError &&
-            cause.status === 409 &&
-            cause.current
-          ) {
-            conflicting.current = cause.current;
-            setRemote(cause.current);
-            setStatus("conflict");
-          } else {
-            setMessage(cause instanceof Error ? cause.message : "保存失败");
-            setStatus("error");
-          }
-          return false;
-        }
-      }
-      return false;
-    })();
-
-    saving.current = task;
-    try {
-      return await task;
-    } finally {
-      saving.current = null;
-    }
-  }, [resume.id]);
 
   async function saveVersion(title?: string): Promise<boolean> {
     if (!isDraftModified(lastPublished.current, draft.current)) {

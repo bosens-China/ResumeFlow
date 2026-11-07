@@ -6,6 +6,7 @@ import {
   type ResumePreviewOptions,
 } from "@/hooks/use-resume-preview";
 import { PREVIEW_WIDTH } from "@/lib/preview-document";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export type { PreviewStatus } from "@/hooks/use-resume-preview";
 
@@ -20,9 +21,10 @@ export function ResumePreview(options: ResumePreviewOptions) {
   );
 
   return (
-    <div
+    <ScrollArea
       ref={container}
-      className="relative h-full overflow-auto bg-muted/50 py-6"
+      className="relative h-full bg-muted/50"
+      viewportClassName="py-6"
       aria-busy={!preview.ready && !preview.error}
     >
       {preview.error && (
@@ -60,6 +62,6 @@ export function ResumePreview(options: ResumePreviewOptions) {
           }}
         />
       </div>
-    </div>
+    </ScrollArea>
   );
 }

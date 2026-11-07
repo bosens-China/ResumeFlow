@@ -1,6 +1,5 @@
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { type ResumeSummary, renderMarkdown } from "@resumeflow/shared";
-import { useSize } from "ahooks";
 import { FileText } from "lucide-react";
 import {
   getResumePageCss,
@@ -9,7 +8,8 @@ import {
 
 export function ResumeThumbnail({ resume }: { resume: ResumeSummary }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const size = useSize(containerRef);
+  const shadowRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(180);
   const currentLang = resume.currentLanguage ?? "zh";
   const item = resume.languages?.[currentLang];
   const activeMarkdown = (item?.markdown ?? resume.markdown ?? "").trim();
@@ -24,9 +24,54 @@ export function ResumeThumbnail({ resume }: { resume: ResumeSummary }) {
     }
   }, [activeMarkdown]);
 
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const measure = () => setContainerWidth(container.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [parsedHtml]);
+
+  useLayoutEffect(() => {
+    const host = shadowRef.current;
+    if (!host || !parsedHtml) return;
+    const shadow = host.shadowRoot ?? host.attachShadow({ mode: "open" });
+    const style =
+      shadow.querySelector("style") ??
+      shadow.appendChild(document.createElement("style"));
+    const html =
+      shadow.querySelector("html") ??
+      shadow.appendChild(document.createElement("html"));
+    const body =
+      html.querySelector("body") ??
+      html.appendChild(document.createElement("body"));
+    style.textContent = `${getResumePageCss({
+      font: item?.font,
+      language: currentLang,
+      fontBaseUrl: window.location.origin,
+      themeColor: resume.themeColor,
+      margin: resume.margin,
+      lineHeight: resume.lineHeight,
+      customCss: resume.customCss,
+    }).replaceAll(
+      ":root",
+      ":host",
+    )}\nbody{box-sizing:border-box;width:794px;min-height:1123px;padding:${resume.margin?.trim() || RESUME_PAGE_MARGIN};overflow:hidden}`;
+    body.innerHTML = parsedHtml;
+  }, [
+    parsedHtml,
+    currentLang,
+    item?.font,
+    resume.themeColor,
+    resume.margin,
+    resume.lineHeight,
+    resume.customCss,
+  ]);
+
   // A4 标准纸张宽度：794px (210mm @ 96DPI)
   const A4_WIDTH = 794;
-  const containerWidth = size?.width || 180;
   const scale = containerWidth / A4_WIDTH;
 
   if (!parsedHtml) {
@@ -51,26 +96,12 @@ export function ResumeThumbnail({ resume }: { resume: ResumeSummary }) {
 
   return (
     <div ref={containerRef} className="rf-thumbnail-paper">
-      <iframe
-        title="简历缩略图"
+      <div
+        ref={shadowRef}
         aria-hidden="true"
-        tabIndex={-1}
-        sandbox=""
-        srcDoc={`<!doctype html><html><head><style>${getResumePageCss({
-          font: item?.font,
-          language: currentLang,
-          fontBaseUrl: window.location.origin,
-          themeColor: resume.themeColor,
-          margin: resume.margin,
-          lineHeight: resume.lineHeight,
-          customCss: resume.customCss,
-        })}
-html,body{overflow:hidden!important}
-body{box-sizing:border-box;padding:${resume.margin?.trim() || RESUME_PAGE_MARGIN}}</style></head><body>${parsedHtml}</body></html>`}
         style={{
           width: A4_WIDTH,
           height: 1123,
-          border: 0,
           transform: `scale(${scale})`,
           transformOrigin: "top left",
           pointerEvents: "none",

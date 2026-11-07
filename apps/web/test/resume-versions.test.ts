@@ -97,7 +97,7 @@ test(
       await page.waitForTimeout(300);
 
       // 编辑器内容切换到版本 1
-      assert.equal(await editor.inputValue(), "# 第一阶段内容");
+      assert.equal(await editor.innerText(), "# 第一阶段内容");
       assert.equal(store.get(resume.id)!.markdown, "# 第二阶段内容（最新）");
       assert.equal(store.listVersions(resume.id).length, 2);
 
@@ -173,7 +173,7 @@ test(
       await page.waitForTimeout(300);
 
       // 编辑器成功切换为版本 2 的内容
-      assert.equal(await editor.inputValue(), "# 第二阶段内容（最新）");
+      assert.equal(await editor.innerText(), "# 第二阶段内容（最新）");
     } finally {
       await browser.close();
       await closePdfBrowser();
@@ -240,7 +240,7 @@ test(
           )!.disabled,
       );
       assert.equal(store.listVersions(resume.id).length, 0);
-      assert.equal(await editor.inputValue(), "# 发布的正文");
+      assert.equal(await editor.innerText(), "# 发布的正文");
 
       await page.unroute(versionUrl);
       await saveButton.click();

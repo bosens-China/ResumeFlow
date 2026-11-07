@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { useKeyPress, useLocalStorageState } from "ahooks";
+import { useKeyPress } from "ahooks";
 import { Code2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { AutoResizeTitleInput } from "@/components/auto-resize-title-input";
@@ -13,8 +13,10 @@ import { ResumeLayoutMenu } from "@/components/resume-layout-menu";
 import { getResumeFont } from "@resumeflow/shared/resume-fonts";
 import { type PreviewStatus, ResumePreview } from "@/components/resume-preview";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { MarkdownEditor } from "@/components/markdown-editor";
+import type { ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { useEditorWidth } from "@/hooks/use-editor-width";
 import { useResumeEditor } from "@/hooks/use-resume-editor";
 import { DEFAULT_RESUME_NAME, getResume } from "@/lib/resume-store";
 
@@ -70,6 +72,7 @@ export const Route = createFileRoute("/resumes/$resumeId")({
 
 function ResumeDetailPage() {
   const resume = Route.useLoaderData();
+  const [markdownEpoch, setMarkdownEpoch] = useState(0);
   const lastSelectionRef = useRef<{
     lang: string;
     start: number;
@@ -77,6 +80,7 @@ function ResumeDetailPage() {
   } | null>(null);
   const resetSelection = useCallback(() => {
     lastSelectionRef.current = null;
+    setMarkdownEpoch((epoch) => epoch + 1);
   }, []);
   const editor = useResumeEditor(resume, resetSelection);
   const font = getResumeFont(
@@ -92,36 +96,29 @@ function ResumeDetailPage() {
     error: "",
   });
 
-  const [editorWidth = 520, setEditorWidth] = useLocalStorageState<number>(
-    "resumeflow_editor_width",
-    {
-      defaultValue: () =>
-        typeof window !== "undefined"
-          ? Math.max(380, Math.min(window.innerWidth * 0.45, 600))
-          : 520,
-    },
-  );
-  const [isDragging, setIsDragging] = useState(false);
-  const mainRef = useRef<HTMLElement>(null);
-  const markdownRef = useRef<HTMLTextAreaElement>(null);
+  const {
+    editorWidth,
+    isDragging,
+    mainRef,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+  } = useEditorWidth();
+  const markdownRef = useRef<ReactCodeMirrorRef>(null);
 
   useEffect(() => {
     lastSelectionRef.current = null;
   }, [editor.currentLang, resume.id]);
 
-  const handleTextareaSelect = (
-    e: React.SyntheticEvent<HTMLTextAreaElement>,
-  ) => {
-    const t = e.currentTarget;
+  const handleMarkdownSelection = (start: number, end: number) => {
     lastSelectionRef.current = {
       lang: editor.currentLang,
-      start: t.selectionStart,
-      end: t.selectionEnd,
+      start,
+      end,
     };
   };
 
   const handleInsertIcon = (iconName: string) => {
-    if (activeTab !== "markdown") setActiveTab("markdown");
     const insertText = `:icon[${iconName}] `;
     const saved =
       lastSelectionRef.current?.lang === editor.currentLang
@@ -137,7 +134,17 @@ function ResumeDetailPage() {
     const nextContent = `${before}${insertText}${after}`;
     const nextCursor = start + insertText.length;
 
-    editor.updateMarkdown(nextContent);
+    const view = activeTab === "markdown" ? markdownRef.current?.view : null;
+    if (view) {
+      view.dispatch({
+        changes: { from: start, to: end, insert: insertText },
+        selection: { anchor: nextCursor },
+        scrollIntoView: true,
+      });
+    } else {
+      setActiveTab("markdown");
+      editor.updateMarkdown(nextContent);
+    }
     lastSelectionRef.current = {
       lang: editor.currentLang,
       start: nextCursor,
@@ -146,10 +153,13 @@ function ResumeDetailPage() {
     toast.success(`已插入图标 :icon[${iconName}]`);
 
     requestAnimationFrame(() => {
-      const textarea = markdownRef.current;
-      if (textarea) {
-        textarea.focus();
-        textarea.setSelectionRange(nextCursor, nextCursor);
+      const view = markdownRef.current?.view;
+      if (view) {
+        view.dispatch({
+          selection: { anchor: nextCursor },
+          scrollIntoView: true,
+        });
+        view.focus();
       }
     });
   };
@@ -159,27 +169,6 @@ function ResumeDetailPage() {
     e.preventDefault();
     void editor.saveVersion();
   });
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging || !mainRef.current) return;
-    const rect = mainRef.current.getBoundingClientRect();
-    const maxWidth = Math.max(320, rect.width - 876);
-    setEditorWidth(Math.min(maxWidth, Math.max(320, e.clientX - rect.left)));
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {}
-  };
 
   return (
     <div className="flex h-full flex-col bg-background">
@@ -295,25 +284,20 @@ function ResumeDetailPage() {
               </button>
             </div>
             {activeTab === "markdown" && (
-              <ResumeLayoutMenu
-                editorRef={markdownRef}
-                onChange={editor.updateMarkdown}
-              />
+              <ResumeLayoutMenu editorRef={markdownRef} />
             )}
           </div>
 
           {activeTab === "markdown" ? (
-            <Textarea
-              ref={markdownRef}
+            <MarkdownEditor
+              key={markdownEpoch}
+              editorRef={markdownRef}
               value={editor.content}
-              onChange={(e) => editor.updateMarkdown(e.target.value)}
-              onSelect={handleTextareaSelect}
-              onKeyUp={handleTextareaSelect}
-              onClick={handleTextareaSelect}
-              spellCheck={false}
-              aria-label="Markdown 编辑器"
+              onChange={editor.updateMarkdown}
+              onSelectionChange={handleMarkdownSelection}
+              ariaLabel="Markdown 编辑器"
               placeholder="在这里使用 Markdown 编写简历，支持 ::::row 与 :::cell 排版指令…"
-              className="resume-editor-cursor h-full flex-1 resize-none rounded-none border-0 p-6 font-mono text-sm leading-relaxed shadow-none caret-blue-600 [caret-shape:block] selection:bg-primary/20 selection:text-foreground hover:bg-muted/[0.03] focus:bg-background focus-visible:ring-0 transition-colors"
+              className="h-full flex-1"
             />
           ) : (
             <CssEditor
@@ -374,7 +358,7 @@ function ResumeDetailPage() {
           currentLanguage={editor.currentLang}
           languages={editor.languages}
           onSelectLanguage={(lang) => {
-            resetSelection();
+            if (lang !== editor.currentLang) resetSelection();
             editor.handleSelectLanguage(lang);
           }}
           onAddLanguage={(lang, copy) => {
@@ -382,14 +366,13 @@ function ResumeDetailPage() {
             editor.handleAddLanguage(lang, copy);
           }}
           onDeleteLanguage={(lang) => {
-            resetSelection();
+            if (lang === editor.currentLang) resetSelection();
             editor.handleDeleteLanguage?.(lang);
           }}
           versions={editor.history.versions}
           busyVersions={editor.history.busy}
           isDirty={editor.isDirty()}
           onSelectVersion={async (id) => {
-            resetSelection();
             return editor.history.switchToVersion(id);
           }}
           onSaveCurrent={() => editor.saveVersion()}

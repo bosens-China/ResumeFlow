@@ -23,6 +23,33 @@ const editorTheme = EditorView.theme({
   },
   ".cm-scroller": {
     fontFamily: "var(--font-mono)",
+    scrollbarWidth: "thin",
+    scrollbarColor: "transparent transparent",
+    transition: "scrollbar-color 0.2s ease-in-out",
+  },
+  "&:hover .cm-scroller": {
+    scrollbarColor:
+      "color-mix(in srgb, var(--foreground, #000) 25%, transparent) transparent",
+  },
+  ".cm-scroller::-webkit-scrollbar": {
+    width: "6px",
+    height: "6px",
+  },
+  ".cm-scroller::-webkit-scrollbar-track": {
+    backgroundColor: "transparent",
+  },
+  ".cm-scroller::-webkit-scrollbar-thumb": {
+    backgroundColor: "transparent",
+    borderRadius: "9999px",
+    transition: "background-color 0.2s ease-in-out",
+  },
+  "&:hover .cm-scroller::-webkit-scrollbar-thumb": {
+    backgroundColor:
+      "color-mix(in srgb, var(--foreground, #000) 25%, transparent)",
+  },
+  "& .cm-scroller::-webkit-scrollbar-thumb:hover": {
+    backgroundColor:
+      "color-mix(in srgb, var(--foreground, #000) 50%, transparent)",
   },
   ".cm-content": {
     padding: "8px 0",
@@ -121,7 +148,7 @@ export function CssEditor({
           ) : (
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Check className="size-3 text-emerald-600" />
-              <span>语法检查通过 · 保存时将自动格式化</span>
+              <span>语法检查通过 · 可手动格式化</span>
             </div>
           )}
         </div>
@@ -221,7 +248,7 @@ export function CssEditor({
             indentOnInput: true,
             tabSize: 2,
           }}
-          className="resume-editor-cursor h-full text-xs font-mono"
+          className="h-full text-xs font-mono"
         />
       </div>
     </div>

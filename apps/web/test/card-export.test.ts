@@ -51,6 +51,31 @@ test(
       const base = vite.resolvedUrls!.local[0]!;
       await page.goto(base);
       const card = page.locator(`a[href="/resumes/${chinese.id}"]`);
+      const thumbnail = card.locator(".rf-thumbnail-paper > div").first();
+      assert.equal(
+        await thumbnail.evaluate((element) =>
+          element.shadowRoot?.querySelector("body")?.textContent?.trim(),
+        ),
+        "杨柳",
+      );
+      assert.equal(
+        await thumbnail.evaluate((element) =>
+          getComputedStyle(element).getPropertyValue("--rf-theme-color").trim(),
+        ),
+        "#000000",
+      );
+      assert.equal(await card.locator('iframe[title="简历缩略图"]').count(), 0);
+      await page.getByRole("link", { name: "模板中心" }).click();
+      await page.getByRole("link", { name: "我的简历" }).click();
+      assert.equal(
+        await card
+          .locator(".rf-thumbnail-paper > div")
+          .first()
+          .evaluate((element) =>
+            element.shadowRoot?.querySelector("body")?.textContent?.trim(),
+          ),
+        "杨柳",
+      );
       const gate = new Promise<void>((resolve) => {
         release = resolve;
       });

@@ -62,9 +62,10 @@ test(
 
       await editor.evaluate((element) => {
         element.focus();
-        const start = element.value.indexOf("保留后文");
-        element.setSelectionRange(start, element.value.length);
       });
+      await editor.press("Control+End");
+      for (let i = 0; i < "保留后文".length; i++)
+        await editor.press("Shift+ArrowLeft");
       await insert.click();
       assert.deepEqual(await page.getByRole("menuitem").allTextContents(), [
         "左右同行",
@@ -73,19 +74,22 @@ test(
       ]);
       await page.getByRole("menuitem", { name: "左右同行" }).click();
       await page.waitForFunction(() => {
-        const input = document.querySelector("textarea")!;
-        return (
-          input.value.slice(input.selectionStart, input.selectionEnd) ===
-          "左侧内容"
-        );
+        return window.getSelection()?.toString() === "左侧内容";
       });
       await page.keyboard.insertText("研发岗位");
       await editor.evaluate((element) => {
-        const start = element.value.indexOf("右侧内容");
-        element.setSelectionRange(start, start + "右侧内容".length);
+        const line = [...element.querySelectorAll(".cm-line")].find((node) =>
+          node.textContent?.includes("右侧内容"),
+        );
+        const text = line?.firstChild;
+        if (!text) throw new Error("right cell is missing");
+        const start = text.textContent!.indexOf("右侧内容");
+        window
+          .getSelection()!
+          .setBaseAndExtent(text, start, text, start + "右侧内容".length);
       });
       await page.keyboard.insertText("2025 - 至今");
-      const edited = await editor.inputValue();
+      const edited = await editor.innerText();
       assert.ok(edited.includes("研发岗位"));
       const frame = page.frameLocator('iframe[title="简历分页预览"]');
       await frame.locator("#pages .rf-row-2 > .rf-cell").first().waitFor();
@@ -113,8 +117,23 @@ test(
 
       await page.getByRole("button", { name: "自定义样式 (CSS)" }).click();
       assert.equal(await insert.count(), 0);
+      const cssEditor = page.locator(".cm-content");
+      await cssEditor.fill("h1{color: red}");
+      await page.waitForFunction(
+        async (id) =>
+          (await (await fetch(`/api/resumes/${id}`)).json()).customCss ===
+          "h1{color: red}",
+        resume.id,
+      );
+      assert.equal(
+        await cssEditor.evaluate(
+          (element) => element === document.activeElement,
+        ),
+        true,
+      );
+      assert.equal(await cssEditor.innerText(), "h1{color: red}");
       await page.getByRole("button", { name: "正文 (Markdown)" }).click();
-      assert.equal(await editor.inputValue(), edited);
+      assert.equal(await editor.innerText(), edited);
 
       await editor.fill("");
       await insert.focus();
@@ -125,13 +144,13 @@ test(
         () => document.activeElement?.textContent?.trim() === "等宽分栏",
       );
       await page.keyboard.press("Enter");
-      const equalColumns = await editor.inputValue();
+      const equalColumns = await editor.innerText();
       assert.ok(equalColumns.includes("::::row"));
       assert.equal((equalColumns.match(/^:::cell/gm) ?? []).length, 2);
       await frame.locator("#pages .rf-row-2 > .rf-cell").first().waitFor();
       await insert.click();
       await page.keyboard.press("Escape");
-      assert.equal(await editor.inputValue(), equalColumns);
+      assert.equal(await editor.innerText(), equalColumns);
       assert.equal(
         await insert.evaluate((element) => element === document.activeElement),
         true,

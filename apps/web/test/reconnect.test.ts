@@ -45,7 +45,7 @@ test(
       await stream;
       const editor = page.getByRole("textbox", { name: "Markdown 编辑器" });
       await editor.waitFor();
-      assert.equal(await editor.inputValue(), "# 原始内容");
+      assert.equal(await editor.innerText(), "# 原始内容");
       await editor.focus();
       await editor.press("Control+Home");
       await editor.press("Shift+ArrowRight");
@@ -60,12 +60,35 @@ test(
         () =>
           (
             document.querySelector(
-              'textarea[aria-label="Markdown 编辑器"]',
-            ) as HTMLTextAreaElement
-          )?.value === "# 断线期间更新",
+              '.cm-content[aria-label="Markdown 编辑器"]',
+            ) as HTMLElement
+          )?.innerText === "# 断线期间更新",
         null,
         { timeout: 15000 },
       );
+      await editor.focus();
+      await editor.press("Control+Home");
+      await editor.press("Shift+ArrowRight");
+      await editor.evaluate((element) => {
+        element.dataset.focusProbe = "1";
+      });
+      const current = store.get(resume.id)!;
+      assert.equal(
+        store.update(resume.id, current.revision, {
+          themeColor: "#e11d48",
+        }).status,
+        "ok",
+      );
+      await page
+        .getByRole("button", { name: "设置简历主题色 (当前: #e11d48)" })
+        .waitFor();
+      assert.equal(await editor.getAttribute("data-focus-probe"), "1");
+      assert.equal(
+        await editor.evaluate((element) => element === document.activeElement),
+        true,
+      );
+      assert.equal(await page.evaluate(() => getSelection()?.toString()), "#");
+      await editor.press("Control+End");
       await page.getByRole("button", { name: "选择并插入简历图标" }).click();
       await page
         .getByRole("button", { name: "插入 电话 图标 (:icon[phone])" })
@@ -78,25 +101,9 @@ test(
           document.activeElement?.getAttribute("aria-label") ===
           "Markdown 编辑器",
       );
-      assert.equal(await editor.inputValue(), "# 断线期间更新:icon[phone] ");
-      assert.match(
-        await editor.evaluate((element) => getComputedStyle(element).cursor),
-        /data:image\/svg\+xml/,
-      );
-      assert.equal(
-        await editor.evaluate(
-          (element) => getComputedStyle(element).caretShape,
-        ),
-        "block",
-      );
+      assert.equal(await editor.innerText(), "# 断线期间更新:icon[phone] ");
       await page.getByRole("button", { name: "自定义样式 (CSS)" }).click();
       await page.locator(".cm-content").click();
-      assert.match(
-        await page
-          .locator(".cm-content")
-          .evaluate((element) => getComputedStyle(element).cursor),
-        /data:image\/svg\+xml/,
-      );
       assert.equal(
         await page
           .locator(".cm-cursor")
@@ -117,7 +124,7 @@ test(
           "Markdown 编辑器",
       );
       assert.equal(
-        await editor.inputValue(),
+        await editor.innerText(),
         "# 断线期间更新:icon[phone] :icon[mail] ",
       );
       page.once("dialog", (dialog) => dialog.accept());

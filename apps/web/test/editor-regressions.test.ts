@@ -69,7 +69,7 @@ test(
       await editor.fill("# 请求发出后的修改");
       await page.getByRole("button", { name: "切换简历语言版本" }).click();
       await page.getByRole("menu").getByText("英语", { exact: true }).click();
-      assert.equal(await editor.inputValue(), "# English");
+      assert.equal(await editor.innerText(), "# English");
       release();
       await page.getByText("已保存", { exact: true }).waitFor();
       assert.equal(
@@ -110,7 +110,7 @@ test(
       await page.getByRole("alertdialog").waitFor();
       assert.ok(store.get(resume.id)!.languages?.zh);
       await page.getByRole("button", { name: "确认删除", exact: true }).click();
-      assert.equal(await editor.inputValue(), "# 未保存的英文");
+      assert.equal(await editor.innerText(), "# 未保存的英文");
       release();
       await page.waitForFunction(async (id) => {
         const response = await fetch(`/api/resumes/${id}`);
