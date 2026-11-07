@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.0](https://github.com/bosens-China/ResumeFlow/compare/v1.0.0...v1.1.0) (2026-11-07)
+
+
+### Features
+
+* 丰富简历模板与图标编辑体验 ([f5241ca](https://github.com/bosens-China/ResumeFlow/commit/f5241ca3df9599c57585b7d6cc0f5357071eb8b9))
+* 改进简历编辑与分页体验 ([ca4f733](https://github.com/bosens-China/ResumeFlow/commit/ca4f73365d3cb7cc2032bc6a6b6b58f7f86569ef))
+* 统一模板目录并开放 HTTP 查询 ([8c38516](https://github.com/bosens-China/ResumeFlow/commit/8c3851660c852684633b62bc09a06f454c70dc7c))
+* 统一简历分栏语法与快捷插入 ([11277a8](https://github.com/bosens-China/ResumeFlow/commit/11277a877e2d64bd4fd1154f4f720c86b9f2d678))
+
+
+### Bug Fixes
+
+* 修正简历缩略图页边距 ([31ff873](https://github.com/bosens-China/ResumeFlow/commit/31ff8739869bdcf9904d9f3da32adce1ef839c9e))
+* 稳定简历编辑与缩略图展示 ([65afd34](https://github.com/bosens-China/ResumeFlow/commit/65afd349d678247fc73b12d78793c656168fbc47))
+
 ## 1.0.0 (2026-11-06)
 
 
