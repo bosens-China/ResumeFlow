@@ -28,7 +28,7 @@ export function ResumeExportButton({
         size="sm"
         onClick={() => onExport(currentLanguage)}
         disabled={disabled || exporting}
-        className="h-8 gap-1.5 px-3 text-xs font-medium shadow-xs"
+        className="h-8 gap-1.5 px-3 text-xs font-medium shadow-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/20 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
       >
         <Download className="size-3.5" />
         {exporting ? "导出中…" : "导出 PDF"}
@@ -42,12 +42,12 @@ export function ResumeExportButton({
         size="sm"
         onClick={() => onExport(currentLanguage)}
         disabled={disabled || exporting}
-        className="h-8 gap-1.5 px-2.5 text-xs font-medium shadow-xs"
+        className="h-8 gap-1.5 px-2.5 text-xs font-medium shadow-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/20 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
         aria-label="导出当前语言 PDF，悬停可选择其他语言"
       >
         <Download className="size-3.5" />
         <span>{exporting ? "导出中…" : "导出 PDF"}</span>
-        <span className="text-[10px] bg-primary-foreground/20 px-1 py-0.5 rounded font-mono">
+        <span className="text-[10px] bg-white/20 px-1 py-0.5 rounded font-mono">
           {currentLanguage}
         </span>
         <ChevronDown className="size-3 opacity-70 group-hover:rotate-180 transition-transform" />

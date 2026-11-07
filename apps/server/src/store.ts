@@ -82,10 +82,16 @@ export function createStore(
       } catch {}
     }
     const currentLanguage = (row.currentLanguage as string) || "zh";
-    if (!languages[currentLanguage] && (row.markdown || row.title)) {
-      languages[currentLanguage] = {
-        title: row.title as string,
-        markdown: (row.markdown as string) || "",
+    if (
+      !Object.hasOwn(languages, currentLanguage) &&
+      (row.markdown || row.title)
+    ) {
+      languages = {
+        ...languages,
+        [currentLanguage]: {
+          title: row.title as string,
+          markdown: (row.markdown as string) || "",
+        },
       };
     }
     const result: Resume = {
@@ -191,7 +197,7 @@ export function createStore(
       if (current.revision !== revision)
         return { status: "conflict" as const, current };
 
-      const nextLanguages = patch.languages
+      let nextLanguages = patch.languages
         ? structuredClone(patch.languages)
         : structuredClone(current.languages ?? {});
 
@@ -199,21 +205,36 @@ export function createStore(
         patch.currentLanguage ?? current.currentLanguage ?? "zh";
 
       if (
+        !Object.hasOwn(nextLanguages, nextCurrentLanguage) &&
+        (patch.markdown === undefined ||
+          (patch.language ?? nextCurrentLanguage) !== nextCurrentLanguage)
+      )
+        return {
+          status: "invalid" as const,
+          message: `语言版本不存在：${nextCurrentLanguage}，请先提供该语言的正文`,
+        };
+
+      if (
         patch.markdown !== undefined ||
         patch.title !== undefined ||
         patch.font !== undefined
       ) {
         const targetLang = patch.language || nextCurrentLanguage;
-        const existingLang = nextLanguages[targetLang] ?? {
+        const existingLang = (Object.hasOwn(nextLanguages, targetLang)
+          ? nextLanguages[targetLang]
+          : undefined) ?? {
           title: current.title,
           markdown:
             targetLang === current.currentLanguage ? current.markdown : "",
         };
-        nextLanguages[targetLang] = {
-          ...existingLang,
-          title: patch.title ?? existingLang.title ?? current.title,
-          markdown: patch.markdown ?? existingLang.markdown,
-          ...(patch.font !== undefined ? { font: patch.font } : {}),
+        nextLanguages = {
+          ...nextLanguages,
+          [targetLang]: {
+            ...existingLang,
+            title: patch.title ?? existingLang.title ?? current.title,
+            markdown: patch.markdown ?? existingLang.markdown,
+            ...(patch.font !== undefined ? { font: patch.font } : {}),
+          },
         };
       }
 

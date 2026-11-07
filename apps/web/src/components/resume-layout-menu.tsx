@@ -18,6 +18,41 @@ const layouts = [
       ["left", "左侧内容"],
       ["right", "右侧内容"],
     ],
+    renderDiagram: () => (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 44 22"
+        className="h-5 w-10 shrink-0 text-muted-foreground group-hover:text-primary transition-colors"
+      >
+        <rect
+          width="44"
+          height="22"
+          rx="3.5"
+          fill="currentColor"
+          fillOpacity="0.06"
+          stroke="currentColor"
+          strokeOpacity="0.25"
+        />
+        <rect
+          x="4"
+          y="6.5"
+          width="22"
+          height="9"
+          rx="2"
+          fill="#2563eb"
+          fillOpacity="0.85"
+        />
+        <rect
+          x="30"
+          y="6.5"
+          width="10"
+          height="9"
+          rx="2"
+          fill="#64748b"
+          fillOpacity="0.75"
+        />
+      </svg>
+    ),
   },
   {
     label: "左中右同行",
@@ -27,6 +62,50 @@ const layouts = [
       ["center", "居中内容"],
       ["right", "右侧内容"],
     ],
+    renderDiagram: () => (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 44 22"
+        className="h-5 w-10 shrink-0 text-muted-foreground group-hover:text-primary transition-colors"
+      >
+        <rect
+          width="44"
+          height="22"
+          rx="3.5"
+          fill="currentColor"
+          fillOpacity="0.06"
+          stroke="currentColor"
+          strokeOpacity="0.25"
+        />
+        <rect
+          x="4"
+          y="6.5"
+          width="10"
+          height="9"
+          rx="2"
+          fill="#2563eb"
+          fillOpacity="0.85"
+        />
+        <rect
+          x="17"
+          y="6.5"
+          width="10"
+          height="9"
+          rx="2"
+          fill="#6366f1"
+          fillOpacity="0.85"
+        />
+        <rect
+          x="30"
+          y="6.5"
+          width="10"
+          height="9"
+          rx="2"
+          fill="#64748b"
+          fillOpacity="0.75"
+        />
+      </svg>
+    ),
   },
   {
     label: "等宽分栏",
@@ -35,6 +114,41 @@ const layouts = [
       ["left", "第一列内容"],
       ["right", "第二列内容"],
     ],
+    renderDiagram: () => (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 44 22"
+        className="h-5 w-10 shrink-0 text-muted-foreground group-hover:text-primary transition-colors"
+      >
+        <rect
+          width="44"
+          height="22"
+          rx="3.5"
+          fill="currentColor"
+          fillOpacity="0.06"
+          stroke="currentColor"
+          strokeOpacity="0.25"
+        />
+        <rect
+          x="4"
+          y="5"
+          width="16"
+          height="12"
+          rx="2"
+          fill="#2563eb"
+          fillOpacity="0.8"
+        />
+        <rect
+          x="24"
+          y="5"
+          width="16"
+          height="12"
+          rx="2"
+          fill="#2563eb"
+          fillOpacity="0.8"
+        />
+      </svg>
+    ),
   },
 ];
 
@@ -81,6 +195,7 @@ export function ResumeLayoutMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
+        className="w-44 p-1.5"
         onCloseAutoFocus={(event) => {
           if (!restoreFocus.current) return;
           event.preventDefault();
@@ -89,8 +204,13 @@ export function ResumeLayoutMenu({
         }}
       >
         {layouts.map((layout) => (
-          <DropdownMenuItem key={layout.label} onSelect={() => insert(layout)}>
-            {layout.label}
+          <DropdownMenuItem
+            key={layout.label}
+            onSelect={() => insert(layout)}
+            className="group flex items-center gap-2.5 px-2.5 py-1.5 cursor-pointer rounded-md"
+          >
+            {layout.renderDiagram()}
+            <span className="font-medium text-xs">{layout.label}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

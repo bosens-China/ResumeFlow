@@ -86,8 +86,9 @@ test(
         confirmations++;
         await confirmation.dismiss();
       });
+      const navigationDialog = page.waitForEvent("dialog");
       await back.click();
-      await page.waitForTimeout(100);
+      await navigationDialog;
       assert.equal(confirmations, 1, "in-app navigation asks before leaving");
       assert.equal(page.url(), url);
 

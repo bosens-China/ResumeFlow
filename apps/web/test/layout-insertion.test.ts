@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { test } from "vitest";
+import { expect, test } from "vitest";
 import { createServer } from "vite";
 import { createApp } from "../../server/src/app.ts";
 import { createStore } from "../../server/src/store.ts";
@@ -90,6 +90,10 @@ test(
       });
       await page.keyboard.insertText("2025 - 至今");
       const edited = await editor.innerText();
+      const markdown = await editor
+        .locator(".cm-line")
+        .allTextContents()
+        .then((lines) => lines.join("\n"));
       assert.ok(edited.includes("研发岗位"));
       const frame = page.frameLocator('iframe[title="简历分页预览"]');
       await frame.locator("#pages .rf-row-2 > .rf-cell").first().waitFor();
@@ -105,13 +109,9 @@ test(
         await frame.locator("#pages .rf-row-2 > .rf-cell").last().innerText(),
         "2025 - 至今",
       );
-      await page.waitForFunction(
-        async ({ id, markdown }) => {
-          const saved = await (await fetch(`/api/resumes/${id}`)).json();
-          return saved.markdown === markdown;
-        },
-        { id: resume.id, markdown: edited },
-      );
+      await expect
+        .poll(() => store.get(resume.id)?.markdown, { timeout: 10_000 })
+        .toBe(markdown);
       assert.equal(store.get(resume.id)!.languages?.en?.markdown, "# English");
       assert.equal(store.get(resume.id)!.customCss, resume.customCss);
 
@@ -119,12 +119,9 @@ test(
       assert.equal(await insert.count(), 0);
       const cssEditor = page.locator(".cm-content");
       await cssEditor.fill("h1{color: red}");
-      await page.waitForFunction(
-        async (id) =>
-          (await (await fetch(`/api/resumes/${id}`)).json()).customCss ===
-          "h1{color: red}",
-        resume.id,
-      );
+      await expect
+        .poll(() => store.get(resume.id)?.customCss, { timeout: 10_000 })
+        .toBe("h1{color: red}");
       assert.equal(
         await cssEditor.evaluate(
           (element) => element === document.activeElement,

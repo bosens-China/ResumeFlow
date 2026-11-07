@@ -126,7 +126,7 @@ export function mcpHandler(store: ResumeStore) {
       "update_resume",
       {
         description:
-          "修改名称、Markdown、语言版本、字体、主题色、内边距、行距与间距或自定义 CSS，需当前 revision。font 按目标语言保存；普通字段局部更新。languages 整体替换，遗漏语言会被删除。language 指定标题、正文和字体的写入目标，currentLanguage 切换显示语言。不会自动翻译",
+          "修改名称、Markdown、语言版本、字体、主题色、内边距、行距与间距或自定义 CSS，需当前 revision。font 按目标语言保存；普通字段局部更新。languages 整体替换，遗漏语言会被删除。language 指定标题、正文和字体的写入目标，currentLanguage 切换显示语言；新增当前语言须同时提供该语言的正文（可以为空）。不会自动翻译",
         inputSchema: updateInput.safeExtend(idInput.shape),
       },
       async ({ id, revision, ...patch }) =>

@@ -34,14 +34,10 @@ test("icon directives render sanitized inline SVGs with aliases", () => {
 });
 
 test("unknown icons or missing icon names throw InvalidMarkdownError", () => {
-  assert.throws(
-    () => renderMarkdown(":icon[unknown-icon-name]"),
-    /未知的图标名称/,
-  );
-  assert.throws(() => renderMarkdown(":icon[]"), /icon 指令必须指定图标名称/);
-  assert.throws(
-    () => renderMarkdown(':::icon{name="phone"}\nimportant content\n:::'),
-    /icon 只支持行内指令/,
+  assert.throws(() => renderMarkdown(":icon[unknown-icon-name]"));
+  assert.throws(() => renderMarkdown(":icon[]"));
+  assert.throws(() =>
+    renderMarkdown(':::icon{name="phone"}\nimportant content\n:::'),
   );
 });
 

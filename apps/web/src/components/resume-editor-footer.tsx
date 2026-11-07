@@ -7,6 +7,7 @@ interface ResumeEditorFooterProps {
   previewPages: number;
   previewReady: boolean;
   previewError: string;
+  saveNotice?: string | null;
 }
 
 export function ResumeEditorFooter({
@@ -18,6 +19,7 @@ export function ResumeEditorFooter({
   previewPages,
   previewReady,
   previewError,
+  saveNotice,
 }: ResumeEditorFooterProps) {
   return (
     <footer className="flex h-8 shrink-0 items-center justify-between border-t bg-background px-4 text-xs text-muted-foreground select-none z-10">
@@ -37,6 +39,11 @@ export function ResumeEditorFooter({
             <>
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               <span>正在发布…</span>
+            </>
+          ) : saveNotice ? (
+            <>
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span>{saveNotice}</span>
             </>
           ) : isDirty ? (
             <>

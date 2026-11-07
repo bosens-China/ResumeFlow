@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { useKeyPress } from "ahooks";
-import { Code2, FileText } from "lucide-react";
+import { Code2, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AutoResizeTitleInput } from "@/components/auto-resize-title-input";
 import { BrandLogo } from "@/components/brand-logo";
@@ -111,11 +111,7 @@ function ResumeDetailPage() {
   }, [editor.currentLang, resume.id]);
 
   const handleMarkdownSelection = (start: number, end: number) => {
-    lastSelectionRef.current = {
-      lang: editor.currentLang,
-      start,
-      end,
-    };
+    lastSelectionRef.current = { lang: editor.currentLang, start, end };
   };
 
   const handleInsertIcon = (iconName: string) => {
@@ -164,7 +160,6 @@ function ResumeDetailPage() {
     });
   };
 
-  // 快捷键 Cmd+S / Ctrl+S 触发保存
   useKeyPress(["meta.s", "ctrl.s"], (e) => {
     e.preventDefault();
     void editor.saveVersion();
@@ -172,13 +167,13 @@ function ResumeDetailPage() {
 
   return (
     <div className="flex h-full flex-col bg-background">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-5">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/80 bg-background/95 backdrop-blur-sm px-5">
         <div className="flex items-center gap-4 min-w-0">
           <BrandLogo />
 
-          <div className="h-4 w-px bg-border shrink-0" />
+          <div className="h-4 w-px bg-border/80 shrink-0" />
 
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center min-w-0">
             <AutoResizeTitleInput
               value={editor.name}
               placeholder="请输入简历名称"
@@ -188,12 +183,6 @@ function ResumeDetailPage() {
                 if (e.key === "Enter") e.currentTarget.blur();
               }}
             />
-
-            {editor.saveNotice && (
-              <span className="text-xs text-muted-foreground select-none shrink-0 animate-in fade-in duration-150">
-                {editor.saveNotice}
-              </span>
-            )}
           </div>
         </div>
 
@@ -203,10 +192,21 @@ function ResumeDetailPage() {
             variant="outline"
             disabled={!editor.isDirty() || editor.isPublishing}
             onClick={() => void editor.saveVersion()}
-            className="h-8 gap-1.5 px-3 text-xs font-medium cursor-pointer"
+            className={`h-8 gap-1.5 px-3 text-xs font-medium cursor-pointer transition-colors ${
+              editor.isPublishing
+                ? "border-blue-300 bg-blue-50/70 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300 cursor-wait"
+                : editor.isDirty()
+                  ? "border-blue-300 bg-blue-50/60 text-blue-700 hover:bg-blue-100/70 hover:text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300"
+                  : "text-muted-foreground"
+            }`}
             aria-label="保存并发布版本 (⌘S)"
           >
-            <span>保存</span>
+            {editor.isPublishing ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : editor.isDirty() ? (
+              <span className="size-1.5 rounded-full bg-blue-600 animate-pulse" />
+            ) : null}
+            <span>{editor.isPublishing ? "保存中…" : "保存"}</span>
           </Button>
 
           <ResumeExportButton
@@ -252,7 +252,7 @@ function ResumeDetailPage() {
           }}
           className="relative flex min-h-0 flex-col border-r bg-background shrink-0"
         >
-          <div className="flex min-h-9 flex-wrap items-center justify-between gap-1 border-b bg-muted/20 px-3 py-1 shrink-0">
+          <div className="flex min-h-9 flex-wrap items-center justify-between gap-1 border-b border-border/80 bg-muted/30 px-3 py-1 shrink-0">
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -278,9 +278,6 @@ function ResumeDetailPage() {
               >
                 <Code2 className="size-3.5" />
                 <span>自定义样式 (CSS)</span>
-                {editor.customCss.trim() && (
-                  <span className="size-1.5 rounded-full bg-primary" />
-                )}
               </button>
             </div>
             {activeTab === "markdown" && (
@@ -328,7 +325,7 @@ function ResumeDetailPage() {
           />
         </div>
 
-        <section className="min-h-0 flex-1 min-w-0 bg-muted/30 overflow-hidden relative">
+        <section className="min-h-0 flex-1 min-w-0 bg-slate-100/70 dark:bg-slate-900/60 overflow-hidden relative">
           {isDragging && (
             <div className="absolute inset-0 z-30 cursor-col-resize" />
           )}
@@ -372,9 +369,7 @@ function ResumeDetailPage() {
           versions={editor.history.versions}
           busyVersions={editor.history.busy}
           isDirty={editor.isDirty()}
-          onSelectVersion={async (id) => {
-            return editor.history.switchToVersion(id);
-          }}
+          onSelectVersion={(id) => editor.history.switchToVersion(id)}
           onSaveCurrent={() => editor.saveVersion()}
         />
       </main>
@@ -385,6 +380,7 @@ function ResumeDetailPage() {
         saveStatus={editor.status}
         isPublishing={editor.isPublishing}
         isDirty={editor.isDirty()}
+        saveNotice={editor.saveNotice}
         previewPages={previewStatus.pages}
         previewReady={previewStatus.ready}
         previewError={previewStatus.error}

@@ -474,3 +474,14 @@
   background-color: #f8fafc;
   font-weight: 600;
 }
+
+/* 移除 CodeMirror 编辑器点击聚焦时的默认外边框 / 轮廓线 */
+.cm-editor,
+.cm-editor.cm-focused,
+.cm-editor:focus,
+.cm-editor:focus-visible,
+.cm-scroller:focus,
+.cm-content:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}

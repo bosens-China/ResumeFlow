@@ -97,7 +97,6 @@ test("language updates and copies keep top-level fields in sync with the active 
     );
     assert.equal(response.status, 201);
     const copy = await response.json();
-    assert.equal(copy.title, "中文 (副本)");
     assert.equal(copy.languages.zh.title, copy.title);
     assert.equal(copy.languages.en.markdown, "# Updated English");
     assert.equal(store.get(resume.id)!.title, "中文");

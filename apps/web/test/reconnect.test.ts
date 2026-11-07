@@ -93,9 +93,6 @@ test(
       await page
         .getByRole("button", { name: "插入 电话 图标 (:icon[phone])" })
         .click();
-      await page
-        .getByText("简历图标库", { exact: true })
-        .waitFor({ state: "hidden" });
       await page.waitForFunction(
         () =>
           document.activeElement?.getAttribute("aria-label") ===
@@ -115,9 +112,6 @@ test(
       await page
         .getByRole("button", { name: "插入 邮箱 图标 (:icon[mail])" })
         .click();
-      await page
-        .getByText("简历图标库", { exact: true })
-        .waitFor({ state: "hidden" });
       await page.waitForFunction(
         () =>
           document.activeElement?.getAttribute("aria-label") ===

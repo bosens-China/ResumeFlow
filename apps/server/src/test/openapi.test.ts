@@ -66,6 +66,18 @@ test("Swagger serves a spec covering REST routes and shared input schemas", asyn
     assert.ok(validation.content?.["application/json"]?.schema);
     assert.ok(spec.paths["/api/resumes/{id}"]!.patch!.responses["409"]);
     assert.ok(spec.paths["/api/resumes/{id}"]!.delete!.responses["204"]);
+    const resume = store.create("快照测试", "# 原稿");
+    const snapshotRequest = () =>
+      app.request(`/api/resumes/${resume.id}/versions`, {
+        method: "POST",
+        headers: { host: "localhost", "content-type": "application/json" },
+        body: JSON.stringify({ revision: resume.revision, title: "版本" }),
+      });
+    const first = await snapshotRequest();
+    const second = await snapshotRequest();
+    assert.equal(first.status, 201);
+    assert.equal(second.status, 201);
+    assert.notEqual((await first.json()).id, (await second.json()).id);
     assert.ok(
       spec.paths["/api/resumes/{id}/pdf"]!.get!.parameters?.some(
         (p) => "name" in p && p.name === "versionId",

@@ -15,6 +15,7 @@ export class ResumeOperationError extends Error {
 type OperationResult =
   | { status: "ok" }
   | { status: "not_found" }
+  | { status: "invalid"; message: string }
   | { status: "conflict"; current: Resume };
 
 export function unwrapResult<T extends OperationResult>(
@@ -23,6 +24,8 @@ export function unwrapResult<T extends OperationResult>(
 ): Extract<T, { status: "ok" }> {
   if (result.status === "not_found")
     throw new ResumeOperationError(404, notFound);
+  if (result.status === "invalid")
+    throw new ResumeOperationError(400, result.message);
   if (result.status === "conflict")
     throw new ResumeOperationError(409, "版本冲突", result.current);
   return result as Extract<T, { status: "ok" }>;

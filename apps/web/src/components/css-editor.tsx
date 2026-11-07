@@ -20,6 +20,10 @@ const editorTheme = EditorView.theme({
   "&": {
     height: "100%",
     fontSize: "13px",
+    outline: "none !important",
+  },
+  "&.cm-focused": {
+    outline: "none !important",
   },
   ".cm-scroller": {
     fontFamily: "var(--font-mono)",
@@ -170,47 +174,62 @@ export function CssEditor({
               side="bottom"
               align="end"
               sideOffset={6}
-              className="w-84 p-3 flex flex-col gap-3 bg-background border border-border shadow-lg rounded-xl z-50 text-xs"
+              className="w-[450px] max-w-[calc(100vw-2rem)] p-3.5 flex flex-col gap-3.5 bg-background border border-border shadow-xl rounded-xl z-50 text-xs"
             >
               <div>
-                <div className="flex items-center gap-1.5 font-semibold text-foreground mb-1.5">
+                <div className="flex items-center gap-1.5 font-semibold text-foreground mb-2">
                   <Palette className="size-3.5 text-primary" />
                   <span>动态主题变量（点击复制）</span>
                 </div>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   {VARIABLE_TIPS.map((tip) => (
                     <button
                       key={tip.name}
                       type="button"
                       onClick={() => handleCopy(tip.name)}
-                      className="group flex items-center justify-between rounded-md bg-muted/50 hover:bg-muted p-1.5 font-mono text-[11px] text-primary transition-colors cursor-pointer border border-border/40"
+                      className="group flex flex-col gap-1 rounded-lg bg-muted/40 hover:bg-muted p-2 text-left font-mono text-[11px] transition-all cursor-pointer border border-border/50 hover:border-primary/40"
                       title={`点击复制: ${tip.name}`}
                     >
-                      <span className="truncate font-medium">{tip.name}</span>
-                      <div className="flex items-center gap-1 shrink-0 text-muted-foreground font-sans text-[10.5px]">
-                        <span>{tip.desc}</span>
-                        <Copy className="size-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="flex items-center justify-between gap-2 font-sans">
+                        <span className="font-medium text-[11px] text-foreground">
+                          {tip.desc}
+                        </span>
+                        <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground group-hover:text-primary transition-colors">
+                          <Copy className="size-3" />
+                          <span>点击复制</span>
+                        </span>
                       </div>
+                      <code className="text-primary font-mono text-[11px] break-all select-all font-semibold bg-background/80 px-1.5 py-0.5 rounded border border-border/40">
+                        {tip.name}
+                      </code>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="border-t pt-2">
-                <div className="font-semibold text-foreground mb-1.5">
+              <div className="border-t border-border/60 pt-2.5">
+                <div className="font-semibold text-foreground mb-2">
                   常用选择器类名
                 </div>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
                   {CLASS_TIPS.map((tip) => (
-                    <div
+                    <button
                       key={tip.name}
-                      className="flex items-center justify-between py-0.5"
+                      type="button"
+                      onClick={() => handleCopy(tip.name)}
+                      className="group flex flex-col gap-0.5 rounded-md p-1.5 hover:bg-muted/60 transition-colors text-left cursor-pointer border border-transparent hover:border-border/60"
+                      title={`点击复制: ${tip.name}`}
                     >
-                      <code className="text-primary font-mono">{tip.name}</code>
-                      <span className="text-muted-foreground text-[10px]">
+                      <div className="flex items-center justify-between gap-1">
+                        <code className="text-primary font-mono text-[11px] font-semibold truncate">
+                          {tip.name}
+                        </code>
+                        <Copy className="size-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      </div>
+                      <span className="text-muted-foreground text-[10.5px] font-sans truncate">
                         {tip.desc}
                       </span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>

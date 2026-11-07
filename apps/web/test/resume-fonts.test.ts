@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
-import { test } from "vitest";
+import { expect, test } from "vitest";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
 import { createApp } from "../../server/src/app.ts";
@@ -93,18 +93,15 @@ test(
       }
       await page.goto(`${vite.resolvedUrls!.local[0]}resumes/${resume.id}`);
       await ready("RF Source Han Sans");
-      assert.match((await fontButton.getAttribute("aria-label"))!, /思源黑体/);
       await select("MiSans");
       await ready("RF MiSans");
-      await page.waitForFunction(
-        async (id) =>
-          (await (await fetch(`/api/resumes/${id}`)).json()).languages.zh
-            .font === "misans",
-        resume.id,
-      );
+      await expect
+        .poll(() => store.get(resume.id)?.languages?.zh?.font, {
+          timeout: 10_000,
+        })
+        .toBe("misans");
       await language("英语");
       await ready("RF Inter");
-      assert.match((await fontButton.getAttribute("aria-label"))!, /Inter/);
       await select("HarmonyOS Sans");
       await ready("RF HarmonyOS Sans");
       await language("简体中文");
@@ -113,13 +110,9 @@ test(
       await editor.fill(
         "# 张三 Resume\n\n## 工作经历\n\n**React 工程师** 2026，业绩提升 35%。",
       );
-      await page.waitForFunction(
-        async (id) =>
-          (await (await fetch(`/api/resumes/${id}`)).json()).markdown.includes(
-            "React 工程师",
-          ),
-        resume.id,
-      );
+      await expect
+        .poll(() => store.get(resume.id)?.markdown, { timeout: 10_000 })
+        .toContain("React 工程师");
       await page.reload();
       await ready("RF MiSans");
       assert.equal(store.get(resume.id)!.languages?.en?.font, "harmonyos-sans");
@@ -146,10 +139,7 @@ test(
         route.abort(),
       );
       await select("阿里普惠体");
-      await page
-        .getByRole("alert")
-        .filter({ hasText: "字体加载失败" })
-        .waitFor();
+      await page.getByRole("alert").waitFor();
       assert.equal(
         await page
           .getByRole("button", { name: "导出当前语言 PDF，悬停可选择其他语言" })

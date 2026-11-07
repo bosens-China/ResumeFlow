@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { test } from "vitest";
+import { expect, test } from "vitest";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
 import { createApp } from "../../server/src/app.ts";
@@ -71,21 +71,16 @@ test(
       await page.getByRole("menu").getByText("英语", { exact: true }).click();
       assert.equal(await editor.innerText(), "# English");
       release();
-      await page.getByText("已保存", { exact: true }).waitFor();
-      assert.equal(
-        store.get(resume.id)!.languages?.zh?.markdown,
-        "# 请求发出后的修改",
-      );
+      await expect
+        .poll(() => store.get(resume.id)!.languages?.zh?.markdown)
+        .toBe("# 请求发出后的修改");
 
       await page.getByRole("button", { name: "切换简历语言版本" }).click();
       await page.getByRole("menuitem", { name: "添加语言版本…" }).click();
       await page
         .getByPlaceholder("例如: en, en-US, zh-HK, ru, fr-CA")
         .fill("ZH");
-      await page
-        .getByRole("alert")
-        .filter({ hasText: "该语言版本已存在" })
-        .waitFor();
+      await page.getByRole("alert").waitFor();
       assert.equal(
         await page
           .getByRole("button", { name: "添加语言", exact: true })
@@ -112,16 +107,39 @@ test(
       await page.getByRole("button", { name: "确认删除", exact: true }).click();
       assert.equal(await editor.innerText(), "# 未保存的英文");
       release();
-      await page.waitForFunction(async (id) => {
-        const response = await fetch(`/api/resumes/${id}`);
-        const saved = await response.json();
-        return !saved.languages.zh;
-      }, resume.id);
+      await expect
+        .poll(() => store.get(resume.id)?.languages?.zh, { timeout: 10_000 })
+        .toBeUndefined();
       assert.equal(store.get(resume.id)!.languages?.zh, undefined);
       assert.equal(
         store.get(resume.id)!.languages?.en?.markdown,
         "# 未保存的英文",
       );
+
+      await page.getByRole("button", { name: "切换简历语言版本" }).click();
+      await page.getByRole("menuitem", { name: "添加语言版本…" }).click();
+      await page
+        .getByPlaceholder("例如: en, en-US, zh-HK, ru, fr-CA")
+        .fill("fr");
+      await page.getByRole("button", { name: "添加语言", exact: true }).click();
+      await expect
+        .poll(() => store.get(resume.id)?.languages?.fr?.markdown, {
+          timeout: 10_000,
+        })
+        .toBe("# 未保存的英文");
+      await page.getByRole("button", { name: "切换简历语言版本" }).click();
+      await page.getByRole("menuitem", { name: "添加语言版本…" }).click();
+      await page
+        .getByPlaceholder("例如: en, en-US, zh-HK, ru, fr-CA")
+        .fill("de");
+      await page.getByRole("button", { name: /使用空白正文/ }).click();
+      await page.getByRole("button", { name: "添加语言", exact: true }).click();
+      await expect
+        .poll(() => store.get(resume.id)?.languages?.de?.markdown, {
+          timeout: 10_000,
+        })
+        .toBe("");
+      assert.equal(store.get(resume.id)!.currentLanguage, "de");
 
       const layout = store.create(
         "排版",

@@ -78,7 +78,7 @@ const languageCode = z.string().min(1).max(20);
 const currentLanguage = languageCode
   .optional()
   .describe(
-    "切换当前显示语言，例如 zh、en；应指向 languages 中已有的语言。与 title/markdown 一起提交时，这些字段默认写入切换后的语言",
+    "切换当前显示语言，例如 zh、en；必须存在于更新后的 languages 中，或在同一请求为该语言提供 markdown（可为空）。title/markdown 默认写入切换后的语言；用 markdown 新增当前语言时，若指定 language，须与当前语言一致",
   );
 const languages = z
   .record(languageCode, languageItem)

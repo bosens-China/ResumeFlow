@@ -19,6 +19,7 @@ export interface PreviewStatus {
   pages: number;
   ready: boolean;
   error: string;
+  imagesLoaded?: boolean;
 }
 
 export interface ResumePreviewOptions extends ResumeStyleOptions {
@@ -83,6 +84,7 @@ export function useResumePreview(
     pages: 0,
     height: PAPER_HEIGHT,
     error: "",
+    imagesLoaded: false,
   });
 
   useEffect(() => {
@@ -98,6 +100,7 @@ export function useResumePreview(
         error?: unknown;
         pages?: unknown;
         height?: unknown;
+        imagesLoaded?: unknown;
       } | null;
       if (
         event.source !== iframe.current?.contentWindow ||
@@ -133,6 +136,7 @@ export function useResumePreview(
           pages: data.pages,
           height: data.height,
           error: "",
+          imagesLoaded: data.imagesLoaded === true,
         });
         callbacks.current.onReadyChange?.(request.content);
       }
@@ -188,8 +192,13 @@ export function useResumePreview(
   const error = parsed.error || (result.key === key ? result.error : "");
   const ready = result.key === key && result.pages > 0 && !error;
   useEffect(() => {
-    callbacks.current.onStatusChange?.({ pages: result.pages, ready, error });
-  }, [result.pages, ready, error]);
+    callbacks.current.onStatusChange?.({
+      pages: result.pages,
+      ready,
+      error,
+      imagesLoaded: result.imagesLoaded,
+    });
+  }, [result.pages, result.imagesLoaded, ready, error]);
 
   return {
     doc,

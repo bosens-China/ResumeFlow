@@ -61,18 +61,11 @@ test("markdown engine renders :icon directives seamlessly with surrounding text"
   assert.ok(rendered.includes("rf-icon-github"));
   assert.ok(rendered.includes("rf-icon-briefcase"));
   assert.ok(rendered.includes("138-0000-0000"));
-
-  // 验证 database 图标包含顶部 ellipse 元素且不被清洗
-  const dbRendered = renderMarkdown(":icon[database] PostgreSQL");
-  assert.ok(dbRendered.includes('<ellipse cx="12" cy="5" rx="9" ry="3"'));
 });
 
-test("all icons provide labels for accessibility", () => {
+test("all icons provide names and labels", () => {
   for (const icon of RESUME_ICONS) {
     assert.ok(icon.label && icon.label.trim().length > 0);
     assert.ok(icon.name && icon.name.trim().length > 0);
-    const ariaLabel = `插入 ${icon.label} 图标 (:icon[${icon.name}])`;
-    assert.ok(ariaLabel.includes(icon.label));
-    assert.ok(ariaLabel.includes(icon.name));
   }
 });

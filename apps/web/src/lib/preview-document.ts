@@ -28,6 +28,7 @@ function startPreview(
   let animation = 0;
   let pageCount = 0;
   let outputHeight = 0;
+  let imagesLoaded = true;
   let appliedHtml = "";
   const reply = (data: object) =>
     parent.postMessage({ source: "resumeflow-preview", ...data }, "*");
@@ -79,12 +80,16 @@ function startPreview(
         source.style.width = `${width}px`;
         source.getBoundingClientRect();
         await waitFonts();
-        await Promise.all(
+        const imageResults = await Promise.all(
           Array.from(source.querySelectorAll("img"), (image) =>
-            image.decode().catch(() => {}),
+            image.decode().then(
+              () => true,
+              () => false,
+            ),
           ),
         );
         if (current !== update) return;
+        imagesLoaded = imageResults.every(Boolean);
         const slices = paginate(source, paperHeight - top - bottom);
         pageCount = slices.length;
         outputHeight = pageCount * (paperHeight + 28);
@@ -107,7 +112,12 @@ function startPreview(
         pages.replaceChildren(fragment);
         rendered = update;
       }
-      reply({ id: update.id, pages: pageCount, height: outputHeight });
+      reply({
+        id: update.id,
+        pages: pageCount,
+        height: outputHeight,
+        imagesLoaded,
+      });
     } catch (error) {
       if (current === update) reply({ id: update.id, error: String(error) });
     }

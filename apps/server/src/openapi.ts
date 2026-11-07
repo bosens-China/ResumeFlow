@@ -171,10 +171,10 @@ export const apiDocs = {
   createVersion: describeRoute({
     summary: "以当前草稿创建命名快照",
     description:
-      "先保存正文和样式，再提交当前 revision 和快照 title。返回的 id 为 versionId；内容未变时复用已有快照。",
+      "先保存正文和样式，再提交当前 revision 和快照 title。返回的 id 为 versionId；每次成功请求都会创建新快照，调用方需要自行避免重复。",
     tags: ["历史版本"],
     responses: {
-      201: jsonResponse(version, "历史快照；内容未变时返回已有快照"),
+      201: jsonResponse(version, "新建的历史快照"),
       404: notFound,
       409: conflict,
     },

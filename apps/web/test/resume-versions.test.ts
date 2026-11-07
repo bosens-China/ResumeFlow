@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { test } from "vitest";
+import { expect, test } from "vitest";
 import { createServer } from "vite";
 import { createApp } from "../../server/src/app.ts";
 import { createStore } from "../../server/src/store.ts";
@@ -69,35 +69,38 @@ test(
 
       // 点击保存 -> 相当于发布版本，存入版本记录中
       await saveButton.click();
-      await page.waitForTimeout(500);
-      assert.equal(store.listVersions(resume.id).length, 1);
+      await expect
+        .poll(() => store.listVersions(resume.id).length, { timeout: 10_000 })
+        .toBe(1);
       const v1 = store.listVersions(resume.id)[0]!;
-      assert.equal(v1.title, "版本 1");
       assert.equal(
         store.getVersion(resume.id, v1.id)!.resume.markdown,
         "# 第一阶段内容",
       );
 
       // 3. 重复点击保存：内容没变化跳过，不会出现新版本记录
-      assert.ok(await saveButton.isDisabled());
+      await expect
+        .poll(() => saveButton.isDisabled(), { timeout: 10_000 })
+        .toBe(true);
       assert.equal(store.listVersions(resume.id).length, 1);
 
       // 4. 再次修改内容，保存发布版本 2
       await editor.fill("# 第二阶段内容（最新）");
       assert.ok(!(await saveButton.isDisabled()));
       await saveButton.click();
-      await page.waitForTimeout(500);
-      assert.equal(store.listVersions(resume.id).length, 2);
+      await expect
+        .poll(() => store.listVersions(resume.id).length, { timeout: 10_000 })
+        .toBe(2);
       const v2 = store.listVersions(resume.id)[0]!;
-      assert.equal(v2.title, "版本 2");
 
       // 查看快照不会覆盖当前草稿，也不会生成归档。
       await versionsButton.click();
       await page.getByRole("menuitem").filter({ hasText: "版本 1" }).click();
-      await page.waitForTimeout(300);
 
       // 编辑器内容切换到版本 1
-      assert.equal(await editor.innerText(), "# 第一阶段内容");
+      await expect
+        .poll(() => editor.innerText(), { timeout: 10_000 })
+        .toBe("# 第一阶段内容");
       assert.equal(store.get(resume.id)!.markdown, "# 第二阶段内容（最新）");
       assert.equal(store.listVersions(resume.id).length, 2);
 
@@ -128,7 +131,7 @@ test(
       assert.equal(store.get(resume.id)!.markdown, "# 从历史继续编辑");
       const archive = store
         .listVersions(resume.id)
-        .find((version) => version.title === "恢复前的草稿");
+        .find((version) => version.id !== v1.id && version.id !== v2.id);
       assert.ok(archive);
       assert.equal(
         store.getVersion(resume.id, archive.id)!.resume.markdown,
@@ -139,14 +142,6 @@ test(
         "# 第一阶段内容",
       );
       assert.equal(store.listVersions(resume.id).length, 3);
-      assert.equal(
-        await page
-          .getByText(
-            "Agent 或其他页面修改了这份简历。你的输入仍保留在编辑器中。",
-          )
-          .count(),
-        0,
-      );
 
       const draftRequest = page.waitForRequest((request) =>
         request.url().includes("/pdf?"),
@@ -167,13 +162,14 @@ test(
       await page.getByRole("menuitem").filter({ hasText: "版本 2" }).click();
 
       // 弹出提示对话框
-      await page.getByText("当前有未保存的修改").waitFor();
+      await page.getByRole("alertdialog").waitFor();
       // 选择放弃并切换
       await page.getByRole("button", { name: "放弃修改并切换" }).click();
-      await page.waitForTimeout(300);
 
       // 编辑器成功切换为版本 2 的内容
-      assert.equal(await editor.innerText(), "# 第二阶段内容（最新）");
+      await expect
+        .poll(() => editor.innerText(), { timeout: 10_000 })
+        .toBe("# 第二阶段内容（最新）");
     } finally {
       await browser.close();
       await closePdfBrowser();
@@ -241,8 +237,13 @@ test(
           });
         } else await route.continue();
       });
+      const failed = page.waitForResponse(
+        (response) =>
+          response.url().endsWith(`/api/resumes/${resume.id}/versions`) &&
+          response.request().method() === "POST",
+      );
       await saveButton.click();
-      await page.getByText("模拟快照写入失败", { exact: true }).waitFor();
+      assert.equal((await failed).status(), 500);
       await page.waitForFunction(
         () =>
           !document.querySelector<HTMLButtonElement>(

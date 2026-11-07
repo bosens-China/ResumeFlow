@@ -20,13 +20,13 @@ export function AutoResizeTitleInput({
   className?: string;
 }) {
   return (
-    <div className="inline-grid grid-cols-[minmax(0,1fr)] items-center max-w-[420px] min-w-[60px]">
-      {/* 隐形镜像文本：严格保持与 input 一致的字号字重内边距 */}
+    <div className="inline-grid grid-cols-[minmax(0,1fr)] items-center max-w-[560px] min-w-[80px]">
+      {/* 隐形镜像文本：严格保持与 input 一致的字号字重、内边距与边框，附加安全缓冲防止汉字末尾笔画被裁剪 */}
       <span
         aria-hidden="true"
-        className="invisible col-start-1 row-start-1 whitespace-pre px-2 py-1 text-sm font-semibold select-none pointer-events-none"
+        className="invisible col-start-1 row-start-1 whitespace-pre pl-2 pr-4 py-1 text-sm font-semibold border border-transparent select-none pointer-events-none"
       >
-        {value || placeholder || " "}
+        {value ? `${value} ` : placeholder || " "}
       </span>
 
       {/* 真实输入框：绝对铺满镜像撑开的实际宽度 */}
@@ -40,7 +40,7 @@ export function AutoResizeTitleInput({
         placeholder={placeholder}
         aria-label="简历名称"
         className={cn(
-          "col-start-1 row-start-1 w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-semibold shadow-none transition-colors",
+          "col-start-1 row-start-1 w-full rounded-md border border-transparent bg-transparent pl-2 pr-4 py-1 text-sm font-semibold shadow-none transition-colors",
           "hover:bg-muted/50 focus-visible:border-input focus-visible:bg-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
           className,
         )}

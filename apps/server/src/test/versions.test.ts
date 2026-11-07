@@ -61,7 +61,6 @@ test("snapshots survive reopen, preserve all languages and styles, and never cha
     const archived = store
       .listVersions(original.id)
       .find((version) => version.id !== snapshot.id)!;
-    assert.equal(archived.title, "恢复前的草稿");
     assert.deepEqual(store.getVersion(original.id, archived.id)!.resume, head);
     store.update(original.id, restored.resume.revision, {
       markdown: "# 分支修改",

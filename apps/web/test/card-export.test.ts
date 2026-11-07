@@ -20,6 +20,10 @@ test(
   async () => {
     const store = createStore(":memory:");
     const chinese = store.create("杨柳大模型开发", "# 杨柳");
+    const imageResume = store.create(
+      "图片简历",
+      "# 图片\n\n![头像](https://example.com/avatar.png)",
+    );
     const english = store.create("English Resume", "# Yang Liu", {
       currentLanguage: "en",
       languages: {
@@ -49,7 +53,38 @@ test(
     try {
       const page = await browser.newPage();
       const base = vite.resolvedUrls!.local[0]!;
+      const imageUrl = "https://example.com/avatar.png";
+      await page.route(imageUrl, (route) => route.abort());
       await page.goto(base);
+      const imageCard = page.locator(`a[href="/resumes/${imageResume.id}"]`);
+      await imageCard.locator('[title^="A4 预览约"]').waitFor();
+      const cached = () =>
+        page.evaluate(
+          (id) =>
+            Object.keys(localStorage).some(
+              (key) =>
+                key.startsWith("resumeflow_page_count_v2_") &&
+                key.endsWith(`:${id}`),
+            ),
+          imageResume.id,
+        );
+      assert.equal(await cached(), false);
+      await page.unroute(imageUrl);
+      let loaded = 0;
+      await page.route(imageUrl, (route) => {
+        loaded++;
+        return route.fulfill({
+          contentType: "image/png",
+          body: Buffer.from(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+XnE0AAAAASUVORK5CYII=",
+            "base64",
+          ),
+        });
+      });
+      await page.reload();
+      await imageCard.locator('[title^="A4 预览约"]').waitFor();
+      assert.ok(loaded > 0);
+      assert.equal(await cached(), true);
       const card = page.locator(`a[href="/resumes/${chinese.id}"]`);
       const thumbnail = card.locator(".rf-thumbnail-paper > div").first();
       assert.equal(
@@ -99,8 +134,9 @@ test(
       await pending.waitFor();
       assert.equal(await pending.isDisabled(), true);
       assert.equal(new URL(page.url()).pathname, "/");
+      const failed = page.waitForResponse(`**/api/resumes/${chinese.id}/pdf?*`);
       release();
-      await page.getByText("PDF 生成失败", { exact: true }).waitFor();
+      assert.equal((await failed).status(), 500);
 
       for (const [resume, filename, language] of [
         [chinese, "杨柳大模型开发.pdf", "zh"],

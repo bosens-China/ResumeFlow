@@ -1,6 +1,10 @@
 import { useMemo, type RefObject } from "react";
 import CodeMirror, {
+  Decoration,
   EditorView,
+  MatchDecorator,
+  ViewPlugin,
+  type ViewUpdate,
   type ReactCodeMirrorRef,
 } from "@uiw/react-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
@@ -15,11 +19,47 @@ export interface MarkdownEditorProps {
   ariaLabel?: string;
 }
 
+// 仅为 ResumeFlow 特殊排版指令（::::row, :::cell, columns, align, :icon[...]）赋予专属高亮
+const rfDirectiveMatcher = new MatchDecorator({
+  regexp:
+    /(::::?row|:::cell|::::?)|(:icon\[[a-zA-Z0-9_-]+\])|(\b(?:columns|align)\b)|(?<=\b(?:columns|align)\s*=\s*)("[^"]*"|'[^']*')/g,
+  decoration: (match) => {
+    if (match[1]) return Decoration.mark({ class: "cm-rf-directive" });
+    if (match[2]) return Decoration.mark({ class: "cm-rf-icon" });
+    if (match[3]) return Decoration.mark({ class: "cm-rf-attr-name" });
+    return Decoration.mark({ class: "cm-rf-attr-val" });
+  },
+});
+
+const rfDirectivePlugin = ViewPlugin.fromClass(
+  class {
+    decorations;
+    constructor(view: EditorView) {
+      this.decorations = rfDirectiveMatcher.createDeco(view);
+    }
+    update(update: ViewUpdate) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = rfDirectiveMatcher.updateDeco(
+          update,
+          this.decorations,
+        );
+      }
+    }
+  },
+  {
+    decorations: (v) => v.decorations,
+  },
+);
+
 const markdownTheme = EditorView.theme({
   "&": {
     height: "100%",
     fontSize: "13.5px",
     backgroundColor: "transparent",
+    outline: "none !important",
+  },
+  "&.cm-focused": {
+    outline: "none !important",
   },
   ".cm-scroller": {
     fontFamily: "var(--font-mono)",
@@ -98,6 +138,33 @@ const markdownTheme = EditorView.theme({
   ".cm-gutterElement": {
     padding: "0 8px 0 12px",
   },
+  // 特殊排版指令专属高亮：::::row, :::cell, ::::
+  ".cm-rf-directive": {
+    color: "#7c3aed !important",
+    fontWeight: "600",
+    backgroundColor: "rgba(124, 58, 237, 0.08)",
+    padding: "1px 4px",
+    borderRadius: "3px",
+  },
+  // 属性名（columns, align）
+  ".cm-rf-attr-name": {
+    color: "#0d9488 !important",
+    fontWeight: "600",
+  },
+  // 属性值（"1fr auto", "left" 等）
+  ".cm-rf-attr-val": {
+    color: "#b45309 !important",
+    fontWeight: "500",
+  },
+  // 图标标签（:icon[...]）
+  ".cm-rf-icon": {
+    color: "#2563eb !important",
+    fontWeight: "600",
+    backgroundColor: "rgba(37, 99, 235, 0.09)",
+    padding: "1px 5px",
+    borderRadius: "4px",
+    border: "1px solid rgba(37, 99, 235, 0.18)",
+  },
 });
 
 export function MarkdownEditor({
@@ -112,6 +179,7 @@ export function MarkdownEditor({
   const extensions = useMemo(
     () => [
       markdown(),
+      rfDirectivePlugin,
       EditorView.lineWrapping,
       EditorView.contentAttributes.of({ "aria-label": ariaLabel }),
       markdownTheme,

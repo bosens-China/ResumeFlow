@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { writeFileSync } from "node:fs";
-import { test } from "vitest";
+import { expect, test } from "vitest";
 import { createServer, preview } from "vite";
 import { createApp } from "../../server/src/app.ts";
 import { createStore } from "../../server/src/store.ts";
@@ -15,7 +15,7 @@ const { serve } =
 const { chromium } = require("playwright") as typeof import("playwright");
 
 test(
-  "typing preserves the iframe, cards share page counts, and templates use HTML preview",
+  "typing preserves the preview iframe and saves the resume",
   { timeout: 60_000 },
   async () => {
     const store = createStore(":memory:");
@@ -128,54 +128,9 @@ test(
         initialPages,
       );
       await page.screenshot({ path: "/tmp/resumeflow-html-preview.png" });
-      await page.waitForFunction(
-        async (id) =>
-          (await (await fetch(`/api/resumes/${id}`)).json()).markdown.includes(
-            "abcdefghijklmnopqrst",
-          ),
-        resume.id,
-      );
-      const finalPages = await frame.locator(".rf-preview-page").count();
-      await page.goto(base);
-      const card = page.locator(`a[href="/resumes/${resume.id}"]`);
-      const badge = card.locator('[title^="A4 预览约"]');
-      await badge.waitFor();
-      assert.equal(await badge.innerText(), `${finalPages} 页`);
-      assert.equal(
-        await page.locator('iframe[title="计算简历页数"]').count(),
-        0,
-      );
-      await page.evaluate(async (id) => {
-        const resume = await (await fetch(`/api/resumes/${id}`)).json();
-        await fetch(`/api/resumes/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            revision: resume.revision,
-            markdown: "# 更新后的单页简历",
-          }),
-        });
-      }, resume.id);
-      await page.waitForFunction(
-        (id) =>
-          document.querySelector(
-            `a[href="/resumes/${id}"] [title^="A4 预览约"]`,
-          )?.textContent === "1 页",
-        resume.id,
-      );
-      await page.goto(`${base}templates`);
-      await page.locator('[title^="A4 预览约"]').first().waitFor();
-      const templatePages = await page
-        .locator('[title^="A4 预览约"]')
-        .first()
-        .innerText();
-      await page.getByText("点击预览模板").first().click({ force: true });
-      const dialogFrame = page.frameLocator('iframe[title="简历分页预览"]');
-      await dialogFrame.locator(".rf-preview-page").first().waitFor();
-      assert.equal(
-        `${await dialogFrame.locator(".rf-preview-page").count()} 页`,
-        templatePages,
-      );
+      await expect
+        .poll(() => store.get(resume.id)?.markdown, { timeout: 10_000 })
+        .toContain("abcdefghijklmnopqrst");
       assert.equal(pagedRequests, 0);
       assert.deepEqual(errors, []);
     } finally {

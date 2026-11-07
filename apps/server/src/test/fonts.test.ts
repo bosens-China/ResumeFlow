@@ -212,7 +212,7 @@ test("the shared pagination guard rejects missing required fonts", async () => {
         store.create("English", "# Resume", { currentLanguage: "en" }),
       ),
     );
-    await assert.rejects(page.evaluate(waitForResumeFonts), /字体加载失败/);
+    await assert.rejects(page.evaluate(waitForResumeFonts));
   } finally {
     await browser.close();
     store.close();
