@@ -2,7 +2,10 @@ import { useMemo, useRef } from "react";
 import { type ResumeSummary, renderMarkdown } from "@resumeflow/shared";
 import { useSize } from "ahooks";
 import { FileText } from "lucide-react";
-import { getResumePageCss } from "@resumeflow/shared/resume-css";
+import {
+  getResumePageCss,
+  RESUME_PAGE_MARGIN,
+} from "@resumeflow/shared/resume-css";
 
 export function ResumeThumbnail({ resume }: { resume: ResumeSummary }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,7 +65,8 @@ export function ResumeThumbnail({ resume }: { resume: ResumeSummary }) {
           lineHeight: resume.lineHeight,
           customCss: resume.customCss,
         })}
-html,body{overflow:hidden!important}</style></head><body>${parsedHtml}</body></html>`}
+html,body{overflow:hidden!important}
+body{box-sizing:border-box;padding:${resume.margin?.trim() || RESUME_PAGE_MARGIN}}</style></head><body>${parsedHtml}</body></html>`}
         style={{
           width: A4_WIDTH,
           height: 1123,
