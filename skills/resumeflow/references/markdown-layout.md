@@ -22,6 +22,78 @@
 
 旧的 `:::left`、`:::center`、`:::right` 及 row 外的 `:::cell` 不再支持，需要改为标准布局。冒号与指令名之间不能有空格。普通单换行遵循 Markdown 规则，需要硬换行时在行尾加两个空格或反斜杠。
 
+## 简历图标语法与可用图标
+
+支持在正文和标题中使用标准行内图标指令 `:icon[名称]`（或 `:icon{name="名称"}`）。图标不区分大小写，支持常用别名；渲染为内联 SVG，自动随字体等比缩放（`1em`）、继承文字颜色（`currentColor`）并垂直居中对齐，离线与 PDF 导出 100% 保真。
+
+示例：
+
+```markdown
+# 候选人
+
+AI 应用研发工程师 · 5年经验  
+:icon[phone] 138-0000-0000 · :icon[mail] applicant@example.com · :icon[map-pin] 北京 / 远程  
+:icon[github] github.com/user · :icon[wechat] wx_applicant
+
+## :icon[code] 专业技能
+
+## :icon[folder-git] 项目经历
+
+## :icon[briefcase] 工作经历
+
+## :icon[graduation-cap] 教育经历
+
+## :icon[award] 荣誉奖项
+```
+
+内置可用图标全集（共 43 款）：
+
+| 分类         | 图标名称 (`name`) | 中文标签         | 支持的常用别名 (`aliases`)               |
+| :----------- | :---------------- | :--------------- | :--------------------------------------- |
+| **联系信息** | `phone`           | 电话             | `tel`, `mobile`                          |
+|              | `mail`            | 邮箱             | `email`                                  |
+|              | `map-pin`         | 地点             | `location`, `city`, `address`            |
+|              | `globe`           | 网站/主页        | `website`, `web`, `site`                 |
+|              | `user`            | 个人/姓名        | `person`                                 |
+|              | `calendar`        | 日历/时间        | `date`, `time`                           |
+| **社交平台** | `github`          | GitHub           | -                                        |
+|              | `linkedin`        | LinkedIn         | -                                        |
+|              | `twitter`         | Twitter / X      | -                                        |
+|              | `wechat`          | 微信             | `wx`, `weixin`                           |
+|              | `zhihu`           | 知乎             | -                                        |
+|              | `juejin`          | 稀土掘金         | -                                        |
+|              | `bilibili`        | 哔哩哔哩         | -                                        |
+|              | `git-branch`      | 分支/开源        | -                                        |
+| **经历版块** | `briefcase`       | 工作经历         | `work`, `job`, `company`                 |
+|              | `graduation-cap`  | 教育经历         | `education`, `school`, `degree`          |
+|              | `folder-git`      | 项目经历         | `project`                                |
+|              | `code`            | 专业技能/代码    | `skills`                                 |
+|              | `award`           | 荣誉奖项         | `honor`, `certificate`                   |
+|              | `trophy`          | 竞赛/比赛        | `contest`                                |
+|              | `book-open`       | 论文/著作        | `book`, `paper`                          |
+|              | `sparkles`        | 核心亮点         | `highlights`                             |
+|              | `heart`           | 兴趣爱好         | -                                        |
+|              | `users`           | 团队/协作        | `team`, `group`, `leader`                |
+|              | `trending-up`     | 指标/增长        | `growth`, `chart`, `metrics`             |
+|              | `languages`       | 语言能力         | `lang`, `translate`, `english`           |
+| **技术架构** | `bot`             | AI/智能体/机器人 | `robot`, `agent`, `llm`, `ai`            |
+|              | `cpu`             | 算力/系统        | `hardware`, `system`                     |
+|              | `terminal`        | 终端/服务端      | `cli`, `backend`                         |
+|              | `database`        | 数据库           | -                                        |
+|              | `layout`          | 前端/UI设计      | `frontend`, `ui`                         |
+|              | `wrench`          | 工具/工程化      | `tool`, `tools`                          |
+|              | `shield`          | 安全/风控        | -                                        |
+|              | `cloud`           | 云原生/容器      | `k8s`, `docker`                          |
+|              | `palette`         | 设计/创意        | `design`, `art`, `color`                 |
+|              | `smartphone`      | 移动端/App       | `mobile-device`, `app`, `ios`, `android` |
+| **通用标记** | `check`           | 对勾/掌握        | -                                        |
+|              | `check-circle`    | 已通过/已认证    | -                                        |
+|              | `star`            | 星标/重点        | -                                        |
+|              | `external-link`   | 外链             | `link`                                   |
+|              | `send`            | 发送/投递        | -                                        |
+|              | `tag`             | 标签             | -                                        |
+|              | `dollar-sign`     | 商业/产值        | `money`, `cost`, `revenue`, `dollar`     |
+
 ## 顶部头像
 
 顶部个人信息区的图片默认作为头像：从顶部第一个 `#`（h1）标题开始，到首个 `##`–`######`（h2–h6）标题之前结束。HTML `<h1>`–`<h6>` 遵循同样规则。进入模块后不会自动恢复头像区域，即使后面再次出现 h1；h1 之前或没有 h1 的图片也不会自动裁剪。
@@ -88,6 +160,16 @@ Markdown 中可以混用白名单允许的 HTML，例如 `div`、`span`、`p`、
 HTML 先解析，再清洗；脚本、iframe 等非白名单标签及 `onerror`、`onclick` 等事件属性、危险链接会被移除。内联 `style` 不保留，样式放在 `customCss`；class 仅保留允许的 `rf-*` 类。不要依赖 JavaScript、任意 HTML 属性或任意 class。
 
 HTML 块内需要继续解析 Markdown 时，在 HTML 标签与 Markdown 内容之间留空行。代码块或行内代码中的 HTML 仅展示源码，不作为标签执行。
+
+## 自定义 CSS 与主题色变量
+
+在 `customCss` 中编写自定义样式时，可直接引用系统注入的动态主题变量：
+
+- `var(--rf-theme-color)`：当前简历在工具栏所选的主题色（如 `#147b80`、`#2563eb` 等）。
+- `color-mix(in srgb, var(--rf-theme-color) 12%, white)`：通过现代 CSS 语法获得当前主题色的浅色底色（非常适合模块胶囊标签或背景条）。
+- `var(--rf-line-height-ratio)` 与 `var(--rf-spacing-ratio)`：当前简历排版间距与行高比例倍数。
+
+在编写自定义 CSS 时尽量避免写死颜色 hex，推荐使用 `var(--rf-theme-color)`，这样用户在右侧工具栏一键切换主题色时，整份简历（包括自定义边框、胶囊底色、文字与图标）均能完美自动联动。
 
 ## PDF 图片限制
 

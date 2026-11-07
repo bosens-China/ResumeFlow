@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { useKeyPress, useLocalStorageState } from "ahooks";
 import { Code2, FileText } from "lucide-react";
@@ -39,11 +39,9 @@ function ResumeErrorPage({
 }) {
   useDocumentTitle("读取失败");
   const message = error instanceof Error ? error.message : "读取简历接口失败";
-
   useEffect(() => {
     toast.error(`读取接口失败: ${message}`);
   }, [message]);
-
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 text-muted-foreground">
       <p className="text-sm">读取简历失败，请检查网络或后端服务</p>
@@ -72,7 +70,15 @@ export const Route = createFileRoute("/resumes/$resumeId")({
 
 function ResumeDetailPage() {
   const resume = Route.useLoaderData();
-  const editor = useResumeEditor(resume);
+  const lastSelectionRef = useRef<{
+    lang: string;
+    start: number;
+    end: number;
+  } | null>(null);
+  const resetSelection = useCallback(() => {
+    lastSelectionRef.current = null;
+  }, []);
+  const editor = useResumeEditor(resume, resetSelection);
   const font = getResumeFont(
     editor.languages[editor.currentLang]?.font,
     editor.currentLang,
@@ -99,6 +105,55 @@ function ResumeDetailPage() {
   const mainRef = useRef<HTMLElement>(null);
   const markdownRef = useRef<HTMLTextAreaElement>(null);
 
+  useEffect(() => {
+    lastSelectionRef.current = null;
+  }, [editor.currentLang, resume.id]);
+
+  const handleTextareaSelect = (
+    e: React.SyntheticEvent<HTMLTextAreaElement>,
+  ) => {
+    const t = e.currentTarget;
+    lastSelectionRef.current = {
+      lang: editor.currentLang,
+      start: t.selectionStart,
+      end: t.selectionEnd,
+    };
+  };
+
+  const handleInsertIcon = (iconName: string) => {
+    if (activeTab !== "markdown") setActiveTab("markdown");
+    const insertText = `:icon[${iconName}] `;
+    const saved =
+      lastSelectionRef.current?.lang === editor.currentLang
+        ? lastSelectionRef.current
+        : null;
+
+    const currentStart = saved?.start ?? editor.content.length;
+    const currentEnd = saved?.end ?? editor.content.length;
+    const start = Math.min(currentStart, editor.content.length);
+    const end = Math.min(currentEnd, editor.content.length);
+    const before = editor.content.slice(0, start);
+    const after = editor.content.slice(end);
+    const nextContent = `${before}${insertText}${after}`;
+    const nextCursor = start + insertText.length;
+
+    editor.updateMarkdown(nextContent);
+    lastSelectionRef.current = {
+      lang: editor.currentLang,
+      start: nextCursor,
+      end: nextCursor,
+    };
+    toast.success(`已插入图标 :icon[${iconName}]`);
+
+    requestAnimationFrame(() => {
+      const textarea = markdownRef.current;
+      if (textarea) {
+        textarea.focus();
+        textarea.setSelectionRange(nextCursor, nextCursor);
+      }
+    });
+  };
+
   // 快捷键 Cmd+S / Ctrl+S 触发保存
   useKeyPress(["meta.s", "ctrl.s"], (e) => {
     e.preventDefault();
@@ -112,29 +167,18 @@ function ResumeDetailPage() {
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    const containerRect = mainRef.current?.getBoundingClientRect();
-    if (!containerRect) return;
-    const minEditorWidth = 320;
-    const minPreviewWidth = 876;
-    const maxEditorWidth = Math.max(
-      minEditorWidth,
-      containerRect.width - minPreviewWidth,
-    );
-    const clamped = Math.min(
-      maxEditorWidth,
-      Math.max(minEditorWidth, e.clientX - containerRect.left),
-    );
-    setEditorWidth(clamped);
+    if (!isDragging || !mainRef.current) return;
+    const rect = mainRef.current.getBoundingClientRect();
+    const maxWidth = Math.max(320, rect.width - 876);
+    setEditorWidth(Math.min(maxWidth, Math.max(320, e.clientX - rect.left)));
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (isDragging) {
-      setIsDragging(false);
-      try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      } catch {}
-    }
+    if (!isDragging) return;
+    setIsDragging(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
   };
 
   return (
@@ -263,10 +307,13 @@ function ResumeDetailPage() {
               ref={markdownRef}
               value={editor.content}
               onChange={(e) => editor.updateMarkdown(e.target.value)}
+              onSelect={handleTextareaSelect}
+              onKeyUp={handleTextareaSelect}
+              onClick={handleTextareaSelect}
               spellCheck={false}
               aria-label="Markdown 编辑器"
               placeholder="在这里使用 Markdown 编写简历，支持 ::::row 与 :::cell 排版指令…"
-              className="h-full flex-1 resize-none rounded-none border-0 p-6 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0"
+              className="resume-editor-cursor h-full flex-1 resize-none rounded-none border-0 p-6 font-mono text-sm leading-relaxed shadow-none caret-blue-600 [caret-shape:block] selection:bg-primary/20 selection:text-foreground hover:bg-muted/[0.03] focus:bg-background focus-visible:ring-0 transition-colors"
             />
           ) : (
             <CssEditor
@@ -323,15 +370,28 @@ function ResumeDetailPage() {
           onChangeMargin={editor.handleChangeMargin}
           lineHeight={editor.lineHeight}
           onChangeLineHeight={editor.handleChangeLineHeight}
+          onInsertIcon={handleInsertIcon}
           currentLanguage={editor.currentLang}
           languages={editor.languages}
-          onSelectLanguage={editor.handleSelectLanguage}
-          onAddLanguage={editor.handleAddLanguage}
-          onDeleteLanguage={editor.handleDeleteLanguage}
+          onSelectLanguage={(lang) => {
+            resetSelection();
+            editor.handleSelectLanguage(lang);
+          }}
+          onAddLanguage={(lang, copy) => {
+            resetSelection();
+            editor.handleAddLanguage(lang, copy);
+          }}
+          onDeleteLanguage={(lang) => {
+            resetSelection();
+            editor.handleDeleteLanguage?.(lang);
+          }}
           versions={editor.history.versions}
           busyVersions={editor.history.busy}
           isDirty={editor.isDirty()}
-          onSelectVersion={editor.history.switchToVersion}
+          onSelectVersion={async (id) => {
+            resetSelection();
+            return editor.history.switchToVersion(id);
+          }}
           onSaveCurrent={() => editor.saveVersion()}
         />
       </main>

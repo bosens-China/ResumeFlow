@@ -46,6 +46,10 @@ test(
       const editor = page.getByRole("textbox", { name: "Markdown 编辑器" });
       await editor.waitFor();
       assert.equal(await editor.inputValue(), "# 原始内容");
+      await editor.focus();
+      await editor.press("Control+Home");
+      await editor.press("Shift+ArrowRight");
+      await editor.press("Shift+ArrowRight");
       assert.equal(
         store.update(resume.id, resume.revision, { markdown: "# 断线期间更新" })
           .status,
@@ -62,6 +66,61 @@ test(
         null,
         { timeout: 15000 },
       );
+      await page.getByRole("button", { name: "选择并插入简历图标" }).click();
+      await page
+        .getByRole("button", { name: "插入 电话 图标 (:icon[phone])" })
+        .click();
+      await page
+        .getByText("简历图标库", { exact: true })
+        .waitFor({ state: "hidden" });
+      await page.waitForFunction(
+        () =>
+          document.activeElement?.getAttribute("aria-label") ===
+          "Markdown 编辑器",
+      );
+      assert.equal(await editor.inputValue(), "# 断线期间更新:icon[phone] ");
+      assert.match(
+        await editor.evaluate((element) => getComputedStyle(element).cursor),
+        /data:image\/svg\+xml/,
+      );
+      assert.equal(
+        await editor.evaluate(
+          (element) => getComputedStyle(element).caretShape,
+        ),
+        "block",
+      );
+      await page.getByRole("button", { name: "自定义样式 (CSS)" }).click();
+      await page.locator(".cm-content").click();
+      assert.match(
+        await page
+          .locator(".cm-content")
+          .evaluate((element) => getComputedStyle(element).cursor),
+        /data:image\/svg\+xml/,
+      );
+      assert.equal(
+        await page
+          .locator(".cm-cursor")
+          .first()
+          .evaluate((element) => getComputedStyle(element).borderLeftWidth),
+        "3px",
+      );
+      await page.getByRole("button", { name: "选择并插入简历图标" }).click();
+      await page
+        .getByRole("button", { name: "插入 邮箱 图标 (:icon[mail])" })
+        .click();
+      await page
+        .getByText("简历图标库", { exact: true })
+        .waitFor({ state: "hidden" });
+      await page.waitForFunction(
+        () =>
+          document.activeElement?.getAttribute("aria-label") ===
+          "Markdown 编辑器",
+      );
+      assert.equal(
+        await editor.inputValue(),
+        "# 断线期间更新:icon[phone] :icon[mail] ",
+      );
+      page.once("dialog", (dialog) => dialog.accept());
       await page.route("**/api/events", (route) => route.abort());
       const listStream = page.waitForRequest("**/api/events");
       await page.goto(vite.resolvedUrls!.local[0]!);

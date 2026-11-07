@@ -39,6 +39,12 @@
       "browser": "./src/templates.ts",
       "development": "./src/templates.ts",
       "default": "./dist/templates.js"
+    },
+    "./resume-icons": {
+      "types": "./src/resume-icons.ts",
+      "browser": "./src/resume-icons.ts",
+      "development": "./src/resume-icons.ts",
+      "default": "./dist/resume-icons.js"
     }
   },
   "scripts": {

@@ -72,9 +72,9 @@ description: 使用 ResumeFlow 管理、编辑和导出简历，优先调用已�
 - 历史快照不可变；恢复会先归档当前草稿，再从所选快照生成新草稿。`versionId` 与草稿 `revision` 用途不同，不能互换。
 - 删除会永久移除简历的全部语言和历史快照。只执行用户已明确要求的删除；已有明确授权和目标时不额外要求确认。
 
-## 排版、头像与图片
+## 排版、图标、头像与图片
 
-编写或修改对齐、分栏、头像、图片及相关 CSS 时，先读 [排版与图片规则](references/markdown-layout.md)。使用显式 `::::row` 包裹 `:::cell`，可用 columns 指定列宽、align 指定对齐；不要使用旧的位置指令或自动分组。所有图片须使用完整 HTTP(S) URL。仅顶部 h1 后、首个 h2–h6 前的图片自动采用头像样式。
+编写或修改对齐、分栏、图标、头像、图片及相关 CSS 时，先读 [排版与图片规则](references/markdown-layout.md)。支持行内图标指令 `:icon[name]`（如 `:icon[phone]`、`:icon[mail]`、`:icon[github]`、`:icon[briefcase]` 等内置 40+ 款图标）。使用显式 `::::row` 包裹 `:::cell`，可用 columns 指定列宽、align 指定对齐；不要使用旧的位置指令或自动分组。所有图片须使用完整 HTTP(S) URL。仅顶部 h1 后、首个 h2–h6 前的图片自动采用头像样式。
 
 ## PDF 交付
 

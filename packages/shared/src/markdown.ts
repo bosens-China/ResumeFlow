@@ -16,6 +16,7 @@ import {
   InvalidMarkdownError,
   validateHtmlImages,
 } from "./html-rules.js";
+import { renderResumeIconHtml } from "./resume-icons.js";
 
 export { InvalidMarkdownError } from "./html-rules.js";
 
@@ -35,6 +36,37 @@ function markdownRules() {
         data?: Record<string, unknown>;
       };
       const line = node.position?.start.line;
+
+      if (directive.name === "icon") {
+        if (node.type !== "textDirective")
+          throw new InvalidMarkdownError("icon 只支持行内指令", line);
+        let iconName = "";
+        if (
+          directive.attributes &&
+          typeof directive.attributes.name === "string"
+        ) {
+          iconName = directive.attributes.name.trim();
+        } else if (directive.children && directive.children.length > 0) {
+          const first = directive.children[0];
+          if (first && "value" in first && typeof first.value === "string") {
+            iconName = first.value.trim();
+          }
+        }
+        if (!iconName) {
+          throw new InvalidMarkdownError("icon 指令必须指定图标名称", line);
+        }
+        const svgHtml = renderResumeIconHtml(iconName);
+        if (!svgHtml) {
+          throw new InvalidMarkdownError(`未知的图标名称: ${iconName}`, line);
+        }
+        Object.assign(node, {
+          type: "html",
+          value: svgHtml,
+          children: undefined,
+        });
+        return;
+      }
+
       if (node.type !== "containerDirective")
         throw new InvalidMarkdownError(`不支持 ${directive.name} 指令`, line);
 
@@ -125,7 +157,112 @@ for (const attrs of Object.values(schemaAttributes)) {
   }
 }
 if (!schemaAttributes["*"]) schemaAttributes["*"] = [];
-schemaAttributes["*"].push(["className", allowRfRegex]);
+schemaAttributes["*"].push(
+  ["className", allowRfRegex],
+  "ariaHidden",
+  "aria-hidden",
+);
+
+const svgTagNames = [
+  ...(defaultSchema.tagNames ?? []),
+  "svg",
+  "path",
+  "circle",
+  "ellipse",
+  "rect",
+  "line",
+  "polyline",
+  "polygon",
+  "g",
+];
+
+const sanitizeAttributes: SanitizeOptions["attributes"] = {
+  ...schemaAttributes,
+  span: [...(schemaAttributes.span ?? []), "dataIcon", "data-icon"],
+  svg: [
+    "className",
+    "viewBox",
+    "width",
+    "height",
+    "fill",
+    "stroke",
+    "strokeWidth",
+    "stroke-width",
+    "strokeLinecap",
+    "stroke-linecap",
+    "strokeLinejoin",
+    "stroke-linejoin",
+    "xmlns",
+  ],
+  path: [
+    "d",
+    "fill",
+    "stroke",
+    "strokeWidth",
+    "stroke-width",
+    "strokeLinecap",
+    "stroke-linecap",
+    "strokeLinejoin",
+    "stroke-linejoin",
+  ],
+  circle: ["cx", "cy", "r", "fill", "stroke", "strokeWidth", "stroke-width"],
+  ellipse: [
+    "cx",
+    "cy",
+    "rx",
+    "ry",
+    "fill",
+    "stroke",
+    "strokeWidth",
+    "stroke-width",
+  ],
+  rect: [
+    "x",
+    "y",
+    "width",
+    "height",
+    "rx",
+    "ry",
+    "fill",
+    "stroke",
+    "strokeWidth",
+    "stroke-width",
+  ],
+  line: [
+    "x1",
+    "y1",
+    "x2",
+    "y2",
+    "stroke",
+    "strokeWidth",
+    "stroke-width",
+    "strokeLinecap",
+    "stroke-linecap",
+  ],
+  polyline: [
+    "points",
+    "fill",
+    "stroke",
+    "strokeWidth",
+    "stroke-width",
+    "strokeLinecap",
+    "stroke-linecap",
+    "strokeLinejoin",
+    "stroke-linejoin",
+  ],
+  polygon: [
+    "points",
+    "fill",
+    "stroke",
+    "strokeWidth",
+    "stroke-width",
+    "strokeLinecap",
+    "stroke-linecap",
+    "strokeLinejoin",
+    "stroke-linejoin",
+  ],
+  g: ["fill", "stroke"],
+};
 
 const processor = unified()
   .use(remarkParse)
@@ -137,7 +274,8 @@ const processor = unified()
   .use(validateHtmlImages)
   .use(rehypeSanitize, {
     ...defaultSchema,
-    attributes: schemaAttributes,
+    tagNames: svgTagNames,
+    attributes: sanitizeAttributes,
   })
   .use(htmlLayout)
   .use(rehypeStringify);

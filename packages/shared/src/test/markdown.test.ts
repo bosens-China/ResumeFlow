@@ -1,5 +1,57 @@
 import { assert, test } from "vitest";
-import { estimateResumePageCount } from "../markdown.ts";
+import { estimateResumePageCount, renderMarkdown } from "../markdown.ts";
+import { getResumeIcon, renderResumeIconHtml } from "../resume-icons.ts";
+
+test("icon directives render sanitized inline SVGs with aliases", () => {
+  const html = renderMarkdown(
+    ":icon[phone] 138-0000-0000 · :icon[github] user",
+  );
+  assert.match(
+    html,
+    /<span class="rf-icon rf-icon-phone" data-icon="phone" aria-hidden="true">/,
+  );
+  assert.match(
+    html,
+    /<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 24 24"/,
+  );
+  assert.match(
+    html,
+    /<span class="rf-icon rf-icon-github" data-icon="github" aria-hidden="true">/,
+  );
+
+  // 测试别名 :icon[tel] 解析为 phone
+  const aliasHtml = renderMarkdown(":icon[tel] 123456");
+  assert.match(aliasHtml, /rf-icon-phone/);
+
+  // 测试属性语法 :icon{name="wechat"}
+  const attrHtml = renderMarkdown(':icon{name="wechat"} wxid');
+  assert.match(attrHtml, /rf-icon-wechat/);
+
+  // 测试包含 ellipse 元素的 database 图标不会被清洗掉顶部
+  const dbHtml = renderMarkdown(":icon[database] PostgreSQL");
+  assert.match(dbHtml, /<ellipse cx="12" cy="5" rx="9" ry="3"/);
+  assert.match(dbHtml, /rf-icon-database/);
+});
+
+test("unknown icons or missing icon names throw InvalidMarkdownError", () => {
+  assert.throws(
+    () => renderMarkdown(":icon[unknown-icon-name]"),
+    /未知的图标名称/,
+  );
+  assert.throws(() => renderMarkdown(":icon[]"), /icon 指令必须指定图标名称/);
+  assert.throws(
+    () => renderMarkdown(':::icon{name="phone"}\nimportant content\n:::'),
+    /icon 只支持行内指令/,
+  );
+});
+
+test("resume icons dictionary provides metadata and valid SVG content", () => {
+  const phone = getResumeIcon("phone");
+  assert.ok(phone);
+  assert.equal(phone.category, "contact");
+  assert.ok(renderResumeIconHtml("phone"));
+  assert.equal(getResumeIcon("not-exists"), undefined);
+});
 
 test("estimateResumePageCount accurately calculates A4 pages for standard and long resumes", () => {
   assert.equal(estimateResumePageCount(""), 1);

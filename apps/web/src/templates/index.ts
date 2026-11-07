@@ -1,8 +1,10 @@
 import type { ResumeTemplate } from "@resumeflow/shared";
+import { INTERNET_RESUME_TEMPLATES } from "@resumeflow/shared/templates";
 import aiEngineerMd from "./ai-engineer.md?raw";
 import productManagerMd from "./product-manager.md?raw";
 
 export const RESUME_TEMPLATES: ResumeTemplate[] = [
+  ...INTERNET_RESUME_TEMPLATES,
   {
     id: "ai-engineer",
     name: "AI 应用开发工程师",
@@ -19,6 +21,16 @@ export const RESUME_TEMPLATES: ResumeTemplate[] = [
 }
 .rf-h1 {
   letter-spacing: -0.01em;
+  color: var(--rf-theme-color, #0f172a);
+}
+.rf-h2 {
+  color: var(--rf-theme-color, #0f172a);
+  border-bottom: 1px solid color-mix(in srgb, var(--rf-theme-color, #0f172a) 25%, transparent);
+  padding-bottom: 1mm;
+  margin-top: 4.5mm;
+}
+.rf-li::marker {
+  color: var(--rf-theme-color, #0f172a);
 }
 `,
     markdown: aiEngineerMd,
@@ -33,9 +45,18 @@ export const RESUME_TEMPLATES: ResumeTemplate[] = [
     tags: ["左对齐·含照", "含证件照", "业务增长"],
     themeColor: "#0284c7",
     margin: "14mm",
-    customCss: `/* 产品经理模板：头像卡片微调 */
+    customCss: `/* 产品经理模板：头像卡片与主题色联动微调 */
 .rf-row:first-of-type {
   margin-bottom: 2mm;
+}
+.rf-h2 {
+  color: var(--rf-theme-color, #0284c7);
+  border-bottom: 1px solid color-mix(in srgb, var(--rf-theme-color, #0284c7) 30%, transparent);
+  padding-bottom: 1mm;
+  margin-top: 4.5mm;
+}
+.rf-li::marker {
+  color: var(--rf-theme-color, #0284c7);
 }
 `,
     markdown: productManagerMd,

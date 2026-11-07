@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { getLanguageName } from "@/lib/format";
 import { ResumeFontDropdown } from "./resume-font-dropdown";
+import { ResumeIconPickerPopover } from "./resume-icon-picker-popover";
 import { ResumeLanguageDropdown } from "./resume-language-dropdown";
 import {
   ResumeSpacingPopover,
@@ -30,6 +31,8 @@ export interface ResumeEditorIconRailProps {
   onChangeMargin: (margin: string) => void;
   lineHeight?: number;
   onChangeLineHeight: (lineHeight: number) => void;
+  // 图标库插入
+  onInsertIcon?: (iconName: string) => void;
   // 多语言
   currentLanguage: string;
   languages: Record<string, { title?: string; markdown: string }>;
@@ -53,6 +56,7 @@ export function ResumeEditorIconRail({
   onChangeMargin,
   lineHeight = 1.0,
   onChangeLineHeight,
+  onInsertIcon,
   currentLanguage,
   languages,
   onSelectLanguage,
@@ -128,6 +132,24 @@ export function ResumeEditorIconRail({
             排版间距 · 边距 {currentMargin} · 行距 {lineHeight.toFixed(2)}x
           </TooltipContent>
         </Tooltip>
+
+        {/* 图标库 */}
+        {onInsertIcon && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <ResumeIconPickerPopover
+                  side="left"
+                  align="start"
+                  onSelectIcon={onInsertIcon}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="left" sideOffset={8}>
+              简历图标库 · 插入图标
+            </TooltipContent>
+          </Tooltip>
+        )}
 
         {/* 分隔线 */}
         <div className="w-5 h-px bg-border/70 my-0.5" />

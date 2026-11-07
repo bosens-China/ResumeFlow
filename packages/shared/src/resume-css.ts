@@ -70,6 +70,10 @@ th, td { padding: 1.2mm 2mm; border: 1px solid #e2e8f0; }
 th { background-color: #f8fafc; font-weight: 600; }
 th:not([align]), td:not([align]) { text-align: inherit; }
 
+/* 图标规范 */
+.rf-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: -0.14em; width: 1em; height: 1em; margin-right: 0.22em; flex-shrink: 0; }
+.rf-icon > svg { display: block; width: 100%; height: 100%; }
+
 /* 分页控制 */
 h1, h2, h3, h4, h5, h6, .rf-h1, .rf-h2, .rf-h3, .rf-h4, .rf-h5, .rf-h6, .rf-row { break-inside: avoid; }
 `;

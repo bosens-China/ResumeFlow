@@ -24,7 +24,7 @@ test("safe HTML mixes with Markdown while executable content is removed", () => 
   assert.match(html, /class="rf-img"/);
   assert.doesNotMatch(
     html,
-    /<(script|iframe|style|object|svg)\b|onerror|onclick|onload|srcset|style=|javascript:/,
+    /<(script|iframe|style|object)\b|onerror|onclick|onload|srcset|style=|javascript:/,
   );
   assert.match(renderMarkdown('`<img src="/example.png">`'), /&#x3C;img/);
 });
@@ -129,9 +129,17 @@ test("paper, templates and thumbnails crop header photos without cropping module
       "utf8",
     );
     for (const styles of [getResumePageCss(), thumbnailCss]) {
-      for (const templateCss of [
-        "",
-        ...RESUME_TEMPLATES.map((item) => item.customCss ?? ""),
+      for (const { templateCss, avatarRatio } of [
+        { templateCss: "", avatarRatio: 0.75 },
+        ...RESUME_TEMPLATES.map((item) => ({
+          templateCss: item.customCss ?? "",
+          avatarRatio:
+            item.id === "backend-sidebar" || item.id === "ui-blue-header"
+              ? 1
+              : item.id === "qa-classic"
+                ? 23 / 29
+                : 0.75,
+        })),
       ]) {
         await page.setContent(
           `<style>${styles}\n${templateCss}</style><div class="rf-thumbnail-canvas">${renderMarkdown(markdown)}</div>`,
@@ -143,7 +151,7 @@ test("paper, templates and thumbnails crop header photos without cropping module
             return { width: rect.width, ratio: rect.width / rect.height };
           }),
         );
-        assert.ok(Math.abs(images[0]!.ratio - 0.75) < 0.01);
+        assert.ok(Math.abs(images[0]!.ratio - avatarRatio) < 0.01);
         assert.ok(
           Math.abs(images[1]!.ratio - 2) < 0.01,
           JSON.stringify({

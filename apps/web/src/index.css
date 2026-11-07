@@ -140,6 +140,15 @@
   }
 }
 
+.resume-editor-cursor,
+.resume-editor-cursor .cm-scroller,
+.resume-editor-cursor .cm-content {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Cpath d='M7 2h6m-3 0v16m-3 0h6' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M7 2h6m-3 0v16m-3 0h6' fill='none' stroke='%23475569' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")
+      10 10,
+    text;
+}
+
 /* 简历卡片真实微缩渲染（等比 1:1.414 A4 纸张排版缩放） */
 .rf-thumbnail-paper {
   position: relative;

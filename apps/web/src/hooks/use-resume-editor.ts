@@ -27,7 +27,7 @@ import {
 export type SaveStatus = "saved" | "saving" | "error" | "conflict";
 const AUTOSAVE_DELAY = 400;
 
-export function useResumeEditor(resume: Resume) {
+export function useResumeEditor(resume: Resume, onContentReplace: () => void) {
   const [initial] = useState(() => getInitialDraft(resume));
   const [currentLang, setCurrentLang] = useState(initial.currentLanguage);
   const [languages, setLanguages] = useState(initial.languages);
@@ -62,25 +62,29 @@ export function useResumeEditor(resume: Resume) {
     }
   }, []);
 
-  const syncStateFromResume = useCallback((target: Resume, viewing = false) => {
-    const next = getInitialDraft(target);
-    draft.current = next;
-    if (!viewing) {
-      committed.current = target;
-      selectedVersion.current = null;
-    }
-    lastPublished.current = target;
-    setName(next.title);
-    setContent(next.markdown);
-    setCurrentLang(next.currentLanguage);
-    setLanguages(next.languages);
-    setThemeColor(next.themeColor);
-    setMargin(next.margin);
-    setLineHeight(next.lineHeight ?? 1);
-    setCustomCss(next.customCss);
-    setCssError(null);
-    setDirty(false);
-  }, []);
+  const syncStateFromResume = useCallback(
+    (target: Resume, viewing = false) => {
+      onContentReplace();
+      const next = getInitialDraft(target);
+      draft.current = next;
+      if (!viewing) {
+        committed.current = target;
+        selectedVersion.current = null;
+      }
+      lastPublished.current = target;
+      setName(next.title);
+      setContent(next.markdown);
+      setCurrentLang(next.currentLanguage);
+      setLanguages(next.languages);
+      setThemeColor(next.themeColor);
+      setMargin(next.margin);
+      setLineHeight(next.lineHeight ?? 1);
+      setCustomCss(next.customCss);
+      setCssError(null);
+      setDirty(false);
+    },
+    [onContentReplace],
+  );
 
   const loadVersion = useCallback(
     async (version: ResumeVersion) => {
