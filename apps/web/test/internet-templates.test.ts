@@ -8,7 +8,6 @@ import {
 import { renderMarkdown } from "@resumeflow/shared/markdown";
 import { getResumePageCss } from "@resumeflow/shared/resume-css";
 import { formatAndValidateCss } from "@resumeflow/shared/css-tools";
-import { RESUME_TEMPLATES as WEB_TEMPLATES } from "../src/templates/index";
 import { previewDocument } from "../src/lib/preview-document";
 import { readResumeFont } from "../../server/src/fonts";
 import { pagedScriptPath, resumeHtml } from "../../server/src/pdf";
@@ -163,10 +162,6 @@ test(
 
       for (const [index, template] of INTERNET_RESUME_TEMPLATES.entries()) {
         assert.ok(RESUME_TEMPLATES.some((item) => item.id === template.id));
-        assert.deepEqual(
-          WEB_TEMPLATES.find((item) => item.id === template.id),
-          template,
-        );
         assert.equal(
           (await formatAndValidateCss(template.customCss ?? "")).valid,
           true,

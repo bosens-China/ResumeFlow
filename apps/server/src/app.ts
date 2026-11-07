@@ -6,7 +6,11 @@ import { streamSSE } from "hono/streaming";
 import { validator } from "hono/validator";
 import { HTTPException } from "hono/http-exception";
 import { createMcpHonoApp } from "@modelcontextprotocol/hono";
-import { getResumePdfFilename, type HealthResponse } from "@resumeflow/shared";
+import {
+  getResumePdfFilename,
+  RESUME_TEMPLATES,
+  type HealthResponse,
+} from "@resumeflow/shared";
 import { createStore, duplicateResume } from "./store.ts";
 import { mcpHandler } from "./mcp.ts";
 import {
@@ -75,6 +79,9 @@ export function createApp(store = createStore()) {
       });
     })
     .get("/api/resumes", apiDocs.list, (c) => c.json(store.list()))
+    .get("/api/resume-templates", apiDocs.listTemplates, (c) =>
+      c.json(RESUME_TEMPLATES),
+    )
     .post("/api/resumes", apiDocs.create, jsonValidator(createInput), (c) => {
       const { title, markdown, ...rest } = c.req.valid("json");
       return c.json(store.create(title, markdown, rest), 201);

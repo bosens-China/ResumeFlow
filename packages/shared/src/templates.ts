@@ -46,6 +46,7 @@ export const RESUME_TEMPLATES: ResumeTemplate[] = [
 `,
     markdown: `::::row
 :::cell{align="center"}
+
 # 候选人
 
 AI 算法工程师 / 大模型应用研发 · 5年经验  
@@ -128,6 +129,7 @@ AI 算法工程师 / 大模型应用研发 · 5年经验
 `,
     markdown: `::::row{columns="1fr auto"}
 :::cell{align="left"}
+
 # 候选人
 
 高级产品经理 / Senior PM · 5年经验  

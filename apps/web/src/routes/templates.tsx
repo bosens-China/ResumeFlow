@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ResumeTemplate } from "@resumeflow/shared";
+import { RESUME_TEMPLATES, type ResumeTemplate } from "@resumeflow/shared";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FilePlus2 } from "lucide-react";
 import { toast } from "sonner";
@@ -8,7 +8,6 @@ import { TemplateCard } from "@/components/template-card";
 import { Button } from "@/components/ui/button";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { createResume, createResumeFromTemplate } from "@/lib/resume-store";
-import { RESUME_TEMPLATES } from "@/templates";
 
 export const Route = createFileRoute("/templates")({
   component: TemplatesPage,

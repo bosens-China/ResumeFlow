@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "vitest";
 import type { generateSpecs } from "hono-openapi";
+import { RESUME_TEMPLATES } from "@resumeflow/shared";
 import { createApp } from "../app.ts";
 import { createStore } from "../store.ts";
 import { closePdfBrowser } from "../pdf.ts";
@@ -39,6 +40,15 @@ test("Swagger serves a spec covering REST routes and shared input schemas", asyn
     }
     assert.equal(spec.paths["/mcp"], undefined);
     assert.equal(spec.paths["/api/docs"], undefined);
+    assert.ok(spec.paths["/api/resume-templates"]?.get);
+    const templates = await app.request("/api/resume-templates", {
+      headers: { host: "localhost" },
+    });
+    assert.equal(templates.status, 200);
+    assert.deepEqual(
+      (await templates.json()).map((item: { id: string }) => item.id),
+      RESUME_TEMPLATES.map((item) => item.id),
+    );
     const create = spec.paths["/api/resumes"]!.post!;
     const body = create.requestBody;
     assert.ok(body && "content" in body);

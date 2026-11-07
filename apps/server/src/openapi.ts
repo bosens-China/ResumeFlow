@@ -14,6 +14,20 @@ const resume = createInput
     updatedAt: z.string(),
   })
   .meta({ ref: "Resume" });
+const resumeTemplate = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    category: z.string(),
+    targetRole: z.string(),
+    description: z.string(),
+    tags: z.array(z.string()),
+    themeColor: z.string(),
+    margin: z.string(),
+    customCss: z.string().optional(),
+    markdown: z.string(),
+  })
+  .meta({ ref: "ResumeTemplate" });
 const versionSummary = z.object({
   id: z.string(),
   title: z.string(),
@@ -86,6 +100,13 @@ export const apiDocs = {
     summary: "列出简历",
     tags: ["简历"],
     responses: { 200: jsonResponse(z.array(resume), "简历列表") },
+  }),
+  listTemplates: describeRoute({
+    summary: "列出预设简历模板",
+    tags: ["简历"],
+    responses: {
+      200: jsonResponse(z.array(resumeTemplate), "预设模板列表"),
+    },
   }),
   create: describeRoute({
     summary: "创建简历",
