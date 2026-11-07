@@ -208,7 +208,7 @@ export function GlobalHelpMenu() {
               className="gap-3 px-2.5 py-2 text-xs cursor-pointer"
             >
               <Bot className="size-3.5 text-muted-foreground" />
-              <span>接入 AI（Skill / HTTP / MCP）</span>
+              <span>接入 AI</span>
             </DropdownMenuItem>
 
             <DropdownMenuSeparator className="my-1.5" />

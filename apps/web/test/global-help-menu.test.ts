@@ -66,9 +66,6 @@ test(
       await page.getByRole("menuitem", { name: /接入 AI/ }).click();
       const dialog = page.getByRole("dialog");
       await dialog.waitFor();
-      const httpInstructions = dialog
-        .getByText("HTTP 接入说明", { exact: true })
-        .locator("../..");
       const copied: string[] = [];
       await page.exposeFunction("captureCopiedText", (value: string) =>
         copied.push(value),
@@ -85,24 +82,30 @@ test(
           },
         });
       });
-      await httpInstructions.getByRole("button", { name: "复制代码" }).click();
+      await dialog.getByRole("button", { name: "复制代码" }).first().click();
       await page.getByText("已复制到剪贴板", { exact: true }).waitFor();
       assert.equal(copied.length, 1);
-      const origin = new URL(page.url()).origin;
-      assert.ok(copied[0]!.includes(`${origin}/api/openapi.json`));
-      assert.ok(copied[0]!.includes(`服务地址为 ${origin}`));
-      assert.equal(
+      assert.equal(copied[0], "npx skills add bosens-China/ResumeFlow");
+      assert.ok(
         await dialog
-          .getByRole("link", { name: "查看 Swagger UI" })
-          .getAttribute("href"),
-        "/api/docs",
+          .getByText(".cursor/mcp.json", { exact: true })
+          .first()
+          .isVisible(),
       );
-      const specLink = dialog.getByRole("link", { name: "查看 OpenAPI JSON" });
-      const specResponse = await page.request.get(
-        new URL((await specLink.getAttribute("href"))!, origin).href,
+      await dialog.getByRole("button", { name: "Claude", exact: true }).click();
+      assert.ok(
+        await dialog
+          .getByText(".mcp.json", { exact: true })
+          .first()
+          .isVisible(),
       );
-      assert.equal(specResponse.status(), 200);
-      assert.ok((await specResponse.json()).paths["/api/resumes"]);
+      await dialog.getByRole("button", { name: "Codex / 通用" }).click();
+      assert.ok(
+        await dialog
+          .getByText("config.toml", { exact: true })
+          .first()
+          .isVisible(),
+      );
       const overflow = await dialog.evaluate(
         (element) => element.scrollWidth > element.clientWidth,
       );
