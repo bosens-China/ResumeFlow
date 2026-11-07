@@ -31,8 +31,7 @@ export async function throwApiError(response: {
 }
 
 export const DEFAULT_RESUME_NAME = "未命名简历";
-export const DEFAULT_MARKDOWN =
-  "# 姓名\n\n:::center\n职位 · 城市 · 电话 · 邮箱\n:::\n\n## 工作经历\n\n:::left\n### 公司名称 · 职位\n:::\n\n:::right\n2022 - 至今\n:::\n\n- 工作内容描述\n";
+export const DEFAULT_MARKDOWN = `# 姓名\n\n::::row\n:::cell{align="center"}\n职位 · 城市 · 电话 · 邮箱\n:::\n::::\n\n## 工作经历\n\n::::row{columns="1fr auto"}\n:::cell{align="left"}\n### 公司名称 · 职位\n:::\n\n:::cell{align="right"}\n2022 - 至今\n:::\n::::\n\n- 工作内容描述\n`;
 
 export async function listResumes() {
   const response = await api.api.resumes.$get();

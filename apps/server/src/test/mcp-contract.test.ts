@@ -33,11 +33,12 @@ async function rpc(
   };
 }
 
-test("REST and MCP accept implicit position rows and four adjacent cells", async () => {
+test("REST and MCP accept explicit rows and four cells", async () => {
   const store = createStore(":memory:");
   try {
     const app = createApp(store);
-    const markdown = ":::right\n日期\n:::\n\n:::left\n岗位\n:::";
+    const markdown =
+      '::::row{columns="1fr auto"}\n:::cell\n岗位\n:::\n:::cell\n日期\n:::\n::::';
     const created = await app.request("/api/resumes", {
       method: "POST",
       headers: { Host: "localhost", "Content-Type": "application/json" },
@@ -51,10 +52,14 @@ test("REST and MCP accept implicit position rows and four adjacent cells", async
     ).join("\n\n");
     const updated = await rpc(app, "tools/call", {
       name: "update_resume",
-      arguments: { id: resume.id, revision: resume.revision, markdown: cells },
+      arguments: {
+        id: resume.id,
+        revision: resume.revision,
+        markdown: `::::row\n${cells}\n::::`,
+      },
     });
     assert.notEqual(updated.isError, true);
-    assert.equal(store.get(resume.id)!.markdown, cells);
+    assert.equal(store.get(resume.id)!.markdown, `::::row\n${cells}\n::::`);
   } finally {
     store.close();
   }

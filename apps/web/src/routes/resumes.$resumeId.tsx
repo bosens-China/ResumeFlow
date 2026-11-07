@@ -265,7 +265,7 @@ function ResumeDetailPage() {
               onChange={(e) => editor.updateMarkdown(e.target.value)}
               spellCheck={false}
               aria-label="Markdown 编辑器"
-              placeholder="在这里使用 Markdown 编写简历，支持 :::center、::::row 与 :::cell 排版指令…"
+              placeholder="在这里使用 Markdown 编写简历，支持 ::::row 与 :::cell 排版指令…"
               className="h-full flex-1 resize-none rounded-none border-0 p-6 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0"
             />
           ) : (

@@ -14,7 +14,7 @@ export const RESUME_TEMPLATES: ResumeTemplate[] = [
     themeColor: "#0f172a",
     margin: "13mm",
     customCss: `/* 极简 AI 研发排版微调 */
-.rf-center {
+.rf-align-center {
   margin-bottom: 2.5mm;
 }
 .rf-h1 {

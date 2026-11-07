@@ -23,20 +23,22 @@ export const RESUME_TEMPLATES: ResumeTemplate[] = [
     themeColor: "#0f172a",
     margin: "13mm",
     customCss: `/* 极简 AI 研发排版微调 */
-.rf-center {
+.rf-align-center {
   margin-bottom: 2.5mm;
 }
 .rf-h1 {
   letter-spacing: -0.01em;
 }
 `,
-    markdown: `:::center
+    markdown: `::::row
+:::cell{align="center"}
 # 候选人
 
 AI 算法工程师 / 大模型应用研发 · 5年经验  
 138-0000-0000 · applicant@example.com · 个人主页 / GitHub  
 期望城市：北京 / 上海 / 远程
 :::
+::::
 
 ## 专业技能
 
@@ -59,13 +61,15 @@ AI 算法工程师 / 大模型应用研发 · 5年经验
 
 ### 某某科技股份有限公司
 
-:::left
+::::row{columns="1fr auto"}
+:::cell{align="left"}
 高级 AI 应用研发工程师
 :::
 
-:::right
+:::cell{align="right"}
 2023.01 - 至今
 :::
+::::
 
 - 负责企业级 AI 中台与大模型应用落地，主导核心架构设计、模型推理加速与智能体业务流水线搭建。
 
@@ -73,13 +77,15 @@ AI 算法工程师 / 大模型应用研发 · 5年经验
 
 ### 某某重点大学
 
-:::left
+::::row{columns="1fr auto"}
+:::cell{align="left"}
 计算机科学与技术 · 工学学士
 :::
 
-:::right
+:::cell{align="right"}
 2015.09 - 2019.06
 :::
+::::
 `,
   },
   {
@@ -97,7 +103,8 @@ AI 算法工程师 / 大模型应用研发 · 5年经验
   margin-bottom: 2mm;
 }
 `,
-    markdown: `:::left
+    markdown: `::::row{columns="1fr auto"}
+:::cell{align="left"}
 # 候选人
 
 高级产品经理 / Senior PM · 5年经验  
@@ -105,9 +112,10 @@ AI 算法工程师 / 大模型应用研发 · 5年经验
 个人主页 / 作品集：https://example.com/portfolio
 :::
 
-:::right
+:::cell{align="right"}
 ![个人照片](https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80)
 :::
+::::
 
 ## 专业能力
 
@@ -129,13 +137,15 @@ AI 算法工程师 / 大模型应用研发 · 5年经验
 
 ### 某某互联网科技有限公司
 
-:::left
+::::row{columns="1fr auto"}
+:::cell{align="left"}
 高级产品经理
 :::
 
-:::right
+:::cell{align="right"}
 2022.05 - 至今
 :::
+::::
 
 - 负责核心产品线的战略规划、需求挖掘与商业化探索，带领跨职能团队推进产品持续迭代与关键业务指标达成。
 
@@ -143,13 +153,15 @@ AI 算法工程师 / 大模型应用研发 · 5年经验
 
 ### 某某重点大学
 
-:::left
+::::row{columns="1fr auto"}
+:::cell{align="left"}
 信息管理与信息系统 · 管理学学士
 :::
 
-:::right
+:::cell{align="right"}
 2015.09 - 2019.06
 :::
+::::
 `,
   },
 ];

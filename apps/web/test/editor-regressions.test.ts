@@ -125,7 +125,7 @@ test(
 
       const layout = store.create(
         "排版",
-        "# 简历\n\n第一行  \n第二行\n\n| 默认 | 居中列 | 右列 |\n| --- | :---: | ---: |\n| A | B | C |\n\n:::center\n# 居中标题\n\n居中说明\n\n| 表头 |\n| --- |\n| 内容 |\n:::\n\n::::row\n:::cell\n岗位\n:::\n:::cell\n日期\n:::\n::::\n\n:::left\n左对齐\n:::\n\n:::right\n右对齐\n\n| 表头 |\n| --- |\n| 内容 |\n:::",
+        '# 简历\n\n第一行  \n第二行\n\n| 默认 | 居中列 | 右列 |\n| --- | :---: | ---: |\n| A | B | C |\n\n::::row\n:::cell{align="center"}\n# 居中标题\n\n居中说明\n\n| 表头 |\n| --- |\n| 内容 |\n:::\n::::\n\n::::row\n:::cell\n岗位\n:::\n:::cell\n日期\n:::\n::::\n\n::::row\n:::cell{align="left"}\n左对齐\n:::\n:::cell{align="right"}\n右对齐\n\n| 表头 |\n| --- |\n| 内容 |\n:::\n::::',
         {
           customCss:
             "/* </style><script>window.injected = true</script><style> */",
@@ -146,20 +146,20 @@ test(
         .elementHandle();
       const frame = await iframe!.contentFrame();
       assert.ok(frame);
-      assert.equal(await frame.locator("#pages .rf-left").count(), 1);
-      assert.equal(await frame.locator("#pages .rf-right").count(), 1);
+      assert.equal(await frame.locator("#pages .rf-align-left").count(), 1);
+      assert.equal(await frame.locator("#pages .rf-align-right").count(), 1);
       assert.equal(await frame.locator("#pages .rf-p br").count(), 1);
       const alignment = await frame.evaluate(() => {
-        const left = document.querySelector(".rf-left")!;
-        const right = document.querySelector(".rf-right")!;
-        const cells = document.querySelectorAll(".rf-row .rf-cell");
+        const left = document.querySelector(".rf-align-left")!;
+        const right = document.querySelector(".rf-align-right")!;
+        const cells = document.querySelectorAll(".rf-row-2 .rf-cell");
         return {
           header: getComputedStyle(document.querySelector("h1 + p")!).textAlign,
           title: getComputedStyle(document.querySelector("h1")!).textAlign,
-          center: getComputedStyle(document.querySelector(".rf-center")!)
+          center: getComputedStyle(document.querySelector(".rf-align-center")!)
             .textAlign,
           centeredTitle: getComputedStyle(
-            document.querySelector(".rf-center h1")!,
+            document.querySelector(".rf-align-center h1")!,
           ).textAlign,
           leftTop: cells[0]!.getBoundingClientRect().top,
           rightTop: cells[1]!.getBoundingClientRect().top,
@@ -168,10 +168,11 @@ test(
           defaultTable: getComputedStyle(document.querySelector("table th")!)
             .textAlign,
           centerTable: getComputedStyle(
-            document.querySelector(".rf-center th")!,
+            document.querySelector(".rf-align-center th")!,
           ).textAlign,
-          rightTable: getComputedStyle(document.querySelector(".rf-right td")!)
-            .textAlign,
+          rightTable: getComputedStyle(
+            document.querySelector(".rf-align-right td")!,
+          ).textAlign,
           columnAlignments: [
             ...document.querySelectorAll(
               "#pages table:first-of-type th[align]",

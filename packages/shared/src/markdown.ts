@@ -11,7 +11,6 @@ import rehypeSanitize, {
   type Options as SanitizeOptions,
 } from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
-import { automaticLayouts } from "./markdown-layout.js";
 import {
   htmlLayout,
   InvalidMarkdownError,
@@ -22,7 +21,7 @@ export { InvalidMarkdownError } from "./html-rules.js";
 
 function markdownRules() {
   return (tree: Root) => {
-    visit(tree, (node) => {
+    visit(tree, (node, _index, parent) => {
       if (
         !["containerDirective", "leafDirective", "textDirective"].includes(
           node.type,
@@ -32,6 +31,7 @@ function markdownRules() {
       const directive = node as typeof node & {
         name: string;
         children?: Root["children"];
+        attributes?: Record<string, string | null>;
         data?: Record<string, unknown>;
       };
       const line = node.position?.start.line;
@@ -39,6 +39,8 @@ function markdownRules() {
         throw new InvalidMarkdownError(`不支持 ${directive.name} 指令`, line);
 
       const name = directive.name;
+      const attrs = directive.attributes ?? {};
+      const classes = [name === "row" ? "rf-row" : `rf-${name}`];
       if (name === "row") {
         const cells = directive.children ?? [];
         if (
@@ -51,17 +53,55 @@ function markdownRules() {
           )
         )
           throw new InvalidMarkdownError("row 必须包含至少一个 cell", line);
-      } else if (!["cell", "left", "center", "right"].includes(name)) {
+        classes.push(`rf-row-${cells.length}`);
+        if (Object.keys(attrs).some((key) => key !== "columns"))
+          throw new InvalidMarkdownError("row 只支持 columns 属性", line);
+        if ("columns" in attrs) {
+          const columns = attrs.columns?.trim().split(/\s+/) ?? [];
+          if (
+            columns.length !== cells.length ||
+            columns.some((column) => {
+              const match = /^([1-9]\d*)(fr|mm|px|%)$/.exec(column);
+              return (
+                column !== "auto" &&
+                (!match ||
+                  Number(match[1]) < 1 ||
+                  Number(match[1]) > (match[2] === "%" ? 100 : 1000))
+              );
+            })
+          )
+            throw new InvalidMarkdownError(
+              "columns 须与 cell 数量一致，使用 auto 或正整数 fr、mm、px、%",
+              line,
+            );
+          classes.push(`rf-cols-${columns.join("-").replaceAll("%", "pct")}`);
+        }
+      } else if (name === "cell") {
+        if (
+          !parent ||
+          parent.type !== "containerDirective" ||
+          !("name" in parent) ||
+          parent.name !== "row"
+        )
+          throw new InvalidMarkdownError("cell 必须位于 row 内", line);
+        if (
+          Object.keys(attrs).some((key) => key !== "align") ||
+          ("align" in attrs &&
+            !["left", "center", "right"].includes(attrs.align ?? ""))
+        )
+          throw new InvalidMarkdownError(
+            "cell 的 align 只支持 left、center、right",
+            line,
+          );
+        if (attrs.align) classes.push(`rf-align-${attrs.align}`);
+      } else {
         throw new InvalidMarkdownError(`不支持 ${name} 指令`, line);
       }
 
       const data = directive.data ?? (directive.data = {});
       data.hName = "div";
       data.hProperties = {
-        className:
-          name === "row"
-            ? ["rf-row", `rf-row-${directive.children!.length}`]
-            : [`rf-${name}`],
+        className: classes,
       };
     });
   };
@@ -91,7 +131,6 @@ const processor = unified()
   .use(remarkParse)
   .use(remarkGfm)
   .use(remarkDirective)
-  .use(automaticLayouts)
   .use(markdownRules)
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeRaw)

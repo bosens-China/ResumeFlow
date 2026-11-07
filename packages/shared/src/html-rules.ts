@@ -63,6 +63,26 @@ export function htmlLayout() {
       const classes = Array.isArray(node.properties.className)
         ? node.properties.className.filter((name) => name !== "rf-avatar")
         : [];
+      const columns = classes.find(
+        (name) =>
+          typeof name === "string" &&
+          /^rf-cols-(?:auto|[1-9]\d{0,3}(?:fr|mm|px|pct))(?:-(?:auto|[1-9]\d{0,3}(?:fr|mm|px|pct)))*$/.test(
+            name,
+          ),
+      );
+      if (tag === "div" && typeof columns === "string") {
+        node.properties.style = `grid-template-columns: ${columns
+          .slice(8)
+          .split("-")
+          .map((column) =>
+            column === "auto"
+              ? "minmax(0, max-content)"
+              : column.endsWith("fr")
+                ? `minmax(0, ${column})`
+                : column.replace("pct", "%"),
+          )
+          .join(" ")}`;
+      }
       const name = /^h[1-6]$/.test(tag) ? tag : elementClasses[tag];
       if (name) classes.push(`rf-${name}`);
       if (tag === "img" && inHeader) classes.push("rf-avatar");

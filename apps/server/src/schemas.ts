@@ -26,7 +26,7 @@ const markdown = z
     }
   })
   .describe(
-    "完整 Markdown 正文，会替换目标语言原文。相邻 :::left/center/right 自动按位置同行，相邻 :::cell 自动分栏；可用 ::::row 包裹 cell 指定行边界。支持安全 HTML（含 img，危险标签和属性会被移除）。所有图片必须使用完整 HTTP(S) URL。顶部 h1 后、首个 h2–h6 前的图片默认采用头像裁剪，进入模块后为普通图片；HTML 标题遵循相同规则",
+    "完整 Markdown 正文，会替换目标语言原文。使用 ::::row 包裹 :::cell 分栏；row 的 columns 可指定 auto、正整数 fr/mm/px/% 列宽，cell 的 align 可指定 left/center/right。支持安全 HTML（含 img，危险标签和属性会被移除）。所有图片必须使用完整 HTTP(S) URL。顶部 h1 后、首个 h2–h6 前的图片默认采用头像裁剪，进入模块后为普通图片；HTML 标题遵循相同规则",
   );
 const font = z
   .enum(RESUME_FONT_IDS)

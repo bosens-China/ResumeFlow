@@ -1,4 +1,5 @@
-:::left
+::::row{columns="1fr auto"}
+:::cell{align="left"}
 
 # 候选人
 
@@ -7,9 +8,10 @@
 个人主页 / 作品集：https://example.com/portfolio
 :::
 
-:::right
+:::cell{align="right"}
 ![个人照片](https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80)
 :::
+::::
 
 ## 专业能力
 
@@ -31,13 +33,15 @@
 
 ### 某某互联网科技有限公司
 
-:::left
+::::row{columns="1fr auto"}
+:::cell{align="left"}
 高级产品经理
 :::
 
-:::right
+:::cell{align="right"}
 2022.05 - 至今
 :::
+::::
 
 - 负责核心产品线的战略规划、需求挖掘与商业化探索，带领跨职能团队推进产品持续迭代与关键业务指标达成。
 
@@ -45,10 +49,12 @@
 
 ### 某某重点大学
 
-:::left
+::::row{columns="1fr auto"}
+:::cell{align="left"}
 信息管理与信息系统 · 管理学学士
 :::
 
-:::right
+:::cell{align="right"}
 2015.09 - 2019.06
 :::
+::::

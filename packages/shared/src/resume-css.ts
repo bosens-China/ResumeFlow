@@ -38,6 +38,9 @@ li::marker { color: #4b5563; }
 .rf-row > .rf-cell { min-width: 0; text-align: center; }
 .rf-row > .rf-cell:first-child { text-align: left; }
 .rf-row > .rf-cell:last-child:not(:first-child) { text-align: right; }
+.rf-row > .rf-cell.rf-align-left { text-align: left; }
+.rf-row > .rf-cell.rf-align-center { text-align: center; }
+.rf-row > .rf-cell.rf-align-right { text-align: right; }
 .rf-cell > :first-child { margin-top: 0; }
 .rf-cell > :last-child { margin-bottom: 0; }
 

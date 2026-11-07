@@ -67,11 +67,13 @@ test("only images after the initial h1 and before the first h2–h6 become avata
     ]) {
       const html = renderMarkdown(`![之前](https://example.com/before.png)
 
-:::center
+::::row
+:::cell{align="center"}
 # 姓名
 
 ![头像](https://example.com/avatar.png)
 :::
+::::
 
 ${heading}
 

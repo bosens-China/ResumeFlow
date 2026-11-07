@@ -66,21 +66,12 @@ test(
         element.setSelectionRange(start, element.value.length);
       });
       await insert.click();
-      await page.getByRole("menuitem", { name: "右对齐" }).click();
-      await page.waitForFunction(() => {
-        const input = document.querySelector("textarea")!;
-        return (
-          document.activeElement === input &&
-          input.value.slice(input.selectionStart, input.selectionEnd) ===
-            "右侧内容"
-        );
-      });
-      const twoColumns = await editor.inputValue();
-      assert.ok(twoColumns.startsWith("# 姓名\n\n保留前文\n\n:::right\n"));
-      assert.ok(twoColumns.endsWith(":::\n\n保留后文"));
-      await page.keyboard.insertText("2025 - 至今");
-      await insert.click();
-      await page.getByRole("menuitem", { name: "左对齐" }).click();
+      assert.deepEqual(await page.getByRole("menuitem").allTextContents(), [
+        "左右同行",
+        "左中右同行",
+        "等宽分栏",
+      ]);
+      await page.getByRole("menuitem", { name: "左右同行" }).click();
       await page.waitForFunction(() => {
         const input = document.querySelector("textarea")!;
         return (
@@ -89,6 +80,11 @@ test(
         );
       });
       await page.keyboard.insertText("研发岗位");
+      await editor.evaluate((element) => {
+        const start = element.value.indexOf("右侧内容");
+        element.setSelectionRange(start, start + "右侧内容".length);
+      });
+      await page.keyboard.insertText("2025 - 至今");
       const edited = await editor.inputValue();
       assert.ok(edited.includes("研发岗位"));
       const frame = page.frameLocator('iframe[title="简历分页预览"]');
@@ -123,48 +119,19 @@ test(
       await editor.fill("");
       await insert.focus();
       await page.keyboard.press("Enter");
-      await page.waitForFunction(
-        () => document.activeElement?.textContent?.trim() === "左对齐",
-      );
+      await page.getByRole("menuitem", { name: "等宽分栏" }).waitFor();
       await page.keyboard.press("End");
       await page.waitForFunction(
-        () => document.activeElement?.textContent?.trim() === "单元格",
+        () => document.activeElement?.textContent?.trim() === "等宽分栏",
       );
       await page.keyboard.press("Enter");
-      for (const content of ["第一项", "第二项", "第三项", "第四项"]) {
-        if (content !== "第一项") {
-          await insert.click();
-          await page.getByRole("menuitem", { name: "单元格" }).click();
-        }
-        await page.waitForFunction(() => {
-          const input = document.querySelector("textarea")!;
-          return (
-            document.activeElement === input &&
-            input.value.slice(input.selectionStart, input.selectionEnd) ===
-              "单元格内容"
-          );
-        });
-        await page.keyboard.insertText(content);
-      }
-      const fourColumns = await editor.inputValue();
-      assert.equal((fourColumns.match(/^:::cell/gm) ?? []).length, 4);
-      await frame.locator("#pages .rf-row-4 > .rf-cell").first().waitFor();
-      assert.equal(
-        await frame.locator("#pages .rf-row-4 > .rf-cell").count(),
-        4,
-      );
-      assert.deepEqual(
-        await frame
-          .locator("#pages .rf-row-4 > .rf-cell")
-          .evaluateAll((cells) =>
-            cells.map((cell) => getComputedStyle(cell).textAlign),
-          ),
-        ["left", "center", "center", "right"],
-      );
-
+      const equalColumns = await editor.inputValue();
+      assert.ok(equalColumns.includes("::::row"));
+      assert.equal((equalColumns.match(/^:::cell/gm) ?? []).length, 2);
+      await frame.locator("#pages .rf-row-2 > .rf-cell").first().waitFor();
       await insert.click();
       await page.keyboard.press("Escape");
-      assert.equal(await editor.inputValue(), fourColumns);
+      assert.equal(await editor.inputValue(), equalColumns);
       assert.equal(
         await insert.evaluate((element) => element === document.activeElement),
         true,

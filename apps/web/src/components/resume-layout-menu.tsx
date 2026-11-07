@@ -10,10 +10,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const layouts = [
-  { label: "左对齐", name: "left", content: "左侧内容" },
-  { label: "居中", name: "center", content: "居中内容" },
-  { label: "右对齐", name: "right", content: "右侧内容" },
-  { label: "单元格", name: "cell", content: "单元格内容" },
+  {
+    label: "左右同行",
+    columns: "1fr auto",
+    cells: [
+      ["left", "左侧内容"],
+      ["right", "右侧内容"],
+    ],
+  },
+  {
+    label: "左中右同行",
+    columns: "1fr auto 1fr",
+    cells: [
+      ["left", "左侧内容"],
+      ["center", "居中内容"],
+      ["right", "右侧内容"],
+    ],
+  },
+  {
+    label: "等宽分栏",
+    columns: "",
+    cells: [
+      ["left", "第一列内容"],
+      ["right", "第二列内容"],
+    ],
+  },
 ];
 
 export function ResumeLayoutMenu({
@@ -25,7 +46,7 @@ export function ResumeLayoutMenu({
 }) {
   const selection = useRef<{ start: number; length: number } | null>(null);
 
-  function insert(name: string, content: string) {
+  function insert({ columns, cells }: (typeof layouts)[number]) {
     const textarea = editorRef.current;
     if (!textarea) return;
     const { value, selectionStart } = textarea;
@@ -34,7 +55,8 @@ export function ResumeLayoutMenu({
     const after = value.slice(offset);
     const prefix = before && !before.endsWith("\n\n") ? "\n\n" : "";
     const suffix = after && !after.startsWith("\n\n") ? "\n\n" : "";
-    const snippet = `:::${name}\n${content}\n:::`;
+    const content = cells[0][1];
+    const snippet = `::::row${columns ? `{columns="${columns}"}` : ""}\n${cells.map(([align, text]) => `:::cell{align="${align}"}\n${text}\n:::`).join("\n\n")}\n::::`;
     selection.current = {
       start: before.length + prefix.length + snippet.indexOf(content),
       length: content.length,
@@ -69,9 +91,9 @@ export function ResumeLayoutMenu({
           selection.current = null;
         }}
       >
-        {layouts.map(({ label, name, content }) => (
-          <DropdownMenuItem key={label} onSelect={() => insert(name, content)}>
-            {label}
+        {layouts.map((layout) => (
+          <DropdownMenuItem key={layout.label} onSelect={() => insert(layout)}>
+            {layout.label}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

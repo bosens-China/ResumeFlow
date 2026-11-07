@@ -15,16 +15,12 @@ test("PDF filenames omit the default Chinese suffix", () => {
 
 test("alignment and line breaks follow explicit Markdown syntax", () => {
   const html = renderMarkdown(
-    "AI Agent｜7年研发经验  \n[邮箱](mailto:hello@example.com)\n\n:::center\n居中内容\n:::\n\n::::row\n:::cell\n岗位\n:::\n:::cell\n2025 - 至今\n:::\n::::",
+    'AI Agent｜7年研发经验  \n[邮箱](mailto:hello@example.com)\n\n::::row\n:::cell{align="center"}\n居中内容\n:::\n::::\n\n::::row\n:::cell\n岗位\n:::\n:::cell\n2025 - 至今\n:::\n::::',
   );
   assert.match(html, /7年研发经验<br>\n<a/);
-  assert.match(html, /<div class="rf-center">/);
+  assert.match(html, /rf-align-center/);
   assert.match(html, /<div class="rf-row rf-row-2">/);
   assert.doesNotMatch(renderMarkdown("第一行\n第二行"), /<br>/);
-  const combined = renderMarkdown(":::right\n右\n:::\n\n:::left\n左\n:::");
-  assert.match(combined, /class="rf-left"/);
-  assert.match(combined, /class="rf-right"/);
-  assert.match(combined, /class="rf-row rf-row-2"/);
   for (const code of [
     "```md\n::: left\n\n示例\n:::\n```",
     "    ::: left\n    示例\n    :::",
@@ -40,7 +36,7 @@ test("alignment and line breaks follow explicit Markdown syntax", () => {
     InvalidMarkdownError,
   );
   assert.throws(
-    () => renderMarkdown(":::left\n\n![图](/image.png)\n\n:::"),
+    () => renderMarkdown("::::row\n:::cell\n![图](/image.png)\n:::\n::::"),
     (error) => error instanceof InvalidMarkdownError && error.line === 3,
   );
 });
