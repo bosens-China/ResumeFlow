@@ -119,9 +119,7 @@ test(
       await select("苹方");
       await ready("RF PingFang SC");
       const downloadStarted = page.waitForEvent("download");
-      await page
-        .getByRole("button", { name: "导出当前语言 PDF，悬停可选择其他语言" })
-        .click();
+      await page.getByRole("button", { name: "导出 PDF" }).click();
       const download = await downloadStarted;
       assert.match(
         readFileSync((await download.path())!).toString("latin1"),
@@ -141,9 +139,7 @@ test(
       await select("阿里普惠体");
       await page.getByRole("alert").waitFor();
       assert.equal(
-        await page
-          .getByRole("button", { name: "导出当前语言 PDF，悬停可选择其他语言" })
-          .isDisabled(),
+        await page.getByRole("button", { name: "导出 PDF" }).isDisabled(),
         true,
       );
       await page.unroute("**/api/fonts/alibaba-puhuiti-*.ttf");

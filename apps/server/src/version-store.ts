@@ -25,6 +25,9 @@ export function createVersionStore(
   const select = db.prepare(
     "SELECT id, title, created_at AS createdAt, snapshot FROM resume_versions WHERE resume_id = ? AND id = ?",
   );
+  const selectAllByResume = db.prepare(
+    "SELECT id, title, created_at AS createdAt, snapshot FROM resume_versions WHERE resume_id = ? ORDER BY created_at ASC, rowid ASC",
+  );
   const insert = db.prepare(
     "INSERT INTO resume_versions VALUES (?, ?, ?, ?, ?)",
   );
@@ -74,6 +77,14 @@ export function createVersionStore(
 
   return {
     getVersion,
+    getAllVersions(id: string): ResumeVersion[] {
+      return selectAllByResume.all(id).map((row) => ({
+        id: String(row.id),
+        title: String(row.title),
+        createdAt: String(row.createdAt),
+        resume: JSON.parse(String(row.snapshot)) as Resume,
+      }));
+    },
     listVersions(id: string): ResumeVersionSummary[] {
       return list.all(id) as unknown as ResumeVersionSummary[];
     },

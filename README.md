@@ -1,16 +1,13 @@
 # ResumeFlow
 
-ResumeFlow 是一款 Markdown 优先的简历工具，支持简历编辑、排版、多语言管理、样式定制和 PDF 导出。通过 MCP 或 HTTP API，AI Agent 也可以管理简历。
+ResumeFlow 是一款 Markdown 优先的简历工具，支持简历编辑、排版、多语言管理、样式定制、PDF/Markdown 导出与数据备份。通过 MCP 或 HTTP API，AI Agent 也可以管理简历。
 
 ![简历模板中心](docs/images/templates.png)
 
 ## Docker 启动
 
 ```sh
-docker run -d --name resumeflow \
-  -p 127.0.0.1:8080:3000 \
-  -v resumeflow-data:/data \
-  boses/resumeflow:latest
+docker run -d --name resumeflow -p 127.0.0.1:8080:3000 -v resumeflow-data:/data boses/resumeflow:latest
 ```
 
 启动后访问 <http://127.0.0.1:8080>。数据保存在 `resumeflow-data` 数据卷中，宿主机端口可按需修改。

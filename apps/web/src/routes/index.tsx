@@ -4,6 +4,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FileText, LayoutTemplate, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { HomeHeader } from "@/components/home-header";
+import { HomeActionButtons } from "@/components/home-action-buttons";
 import { ResumeCard } from "@/components/resume-card";
 import {
   AlertDialog,
@@ -114,8 +115,8 @@ function ResumeListPage() {
     }
   }
 
-  function openRename(resume: ResumeSummary, e: React.MouseEvent) {
-    e.stopPropagation();
+  function openRename(resume: ResumeSummary, e?: React.MouseEvent) {
+    e?.stopPropagation();
     setRenameTarget(resume);
     setRenameValue(resume.title);
   }
@@ -137,8 +138,8 @@ function ResumeListPage() {
     }
   }
 
-  async function handleDuplicate(resume: ResumeSummary, e: React.MouseEvent) {
-    e.stopPropagation();
+  async function handleDuplicate(resume: ResumeSummary, e?: React.MouseEvent) {
+    e?.stopPropagation();
     try {
       await duplicateResume(resume.id);
       await reload();
@@ -148,8 +149,8 @@ function ResumeListPage() {
     }
   }
 
-  function openDelete(resume: ResumeSummary, e: React.MouseEvent) {
-    e.stopPropagation();
+  function openDelete(resume: ResumeSummary, e?: React.MouseEvent) {
+    e?.stopPropagation();
     setDeleteTarget(resume);
   }
 
@@ -170,14 +171,16 @@ function ResumeListPage() {
     <div className="min-h-full flex flex-col bg-background">
       <HomeHeader
         action={
-          <Button
-            onClick={handleCreate}
-            size="sm"
-            className="gap-1.5 shadow-sm font-medium text-xs"
-          >
-            <Plus className="size-3.5" />
-            新建简历
-          </Button>
+          <HomeActionButtons
+            onCreate={handleCreate}
+            onImportSuccess={(id) =>
+              void navigate({
+                to: "/resumes/$resumeId",
+                params: { resumeId: id },
+              })
+            }
+            onRestoreSuccess={() => void reload()}
+          />
         }
       />
 
@@ -246,7 +249,7 @@ function ResumeListPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-[repeat(auto-fill,310px)] gap-6">
             {resumes.map((resume) => (
               <ResumeCard
                 key={resume.id}

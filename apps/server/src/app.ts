@@ -8,10 +8,22 @@ import { HTTPException } from "hono/http-exception";
 import { createMcpHonoApp } from "@modelcontextprotocol/hono";
 import {
   getResumePdfFilename,
+  getResumeMarkdownFilename,
+  getResumeBackupFilename,
   RESUME_TEMPLATES,
   type HealthResponse,
 } from "@resumeflow/shared";
 import { createStore, duplicateResume } from "./store.ts";
+import {
+  backupZip,
+  backupRequest,
+  backupRestoreInput,
+  exportBackup,
+  exportMarkdownArchive,
+  importBackup,
+  inspectBackup,
+  readBackup,
+} from "./backup.ts";
 import { mcpHandler } from "./mcp.ts";
 import {
   getPdfSource,
@@ -209,6 +221,81 @@ export function createApp(store = createStore()) {
           c.get("logger").error({ err: error }, "PDF generation failed");
           return c.json({ error: "PDF 生成失败" }, 500);
         }
+      },
+    )
+    .get("/api/resumes/:id/markdown-all", apiDocs.markdownAll, (c) => {
+      const { resume, title } = getPdfSource(store, c.req.param("id"), {
+        versionId: c.req.query("versionId"),
+        revision: c.req.query("revision"),
+      });
+      return c.body(new Uint8Array(exportMarkdownArchive(resume)), 200, {
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="resume-markdown.zip"; filename*=UTF-8''${encodeURIComponent(`${title}-Markdown.zip`)}`,
+        "Cache-Control": "no-store",
+      });
+    })
+    .get(
+      "/api/resumes/:id/markdown",
+      apiDocs.markdown,
+      validator("query", (query) => query),
+      (c) => {
+        const versionId = c.req.query("versionId");
+        const { resume, language, title } = getPdfSource(
+          store,
+          c.req.param("id"),
+          {
+            versionId,
+            language: c.req.query("lang") || c.req.query("language"),
+          },
+        );
+        const item = resume.languages?.[language];
+        const markdown = item?.markdown ?? resume.markdown ?? "";
+        const disposition =
+          c.req.query("download") === "1"
+            ? `attachment; filename="resume.md"; filename*=UTF-8''${encodeURIComponent(getResumeMarkdownFilename(title, language))}`
+            : 'inline; filename="resume.md"';
+        return c.text(markdown, 200, {
+          "Content-Type": "text/markdown; charset=utf-8",
+          "Content-Disposition": disposition,
+          "Cache-Control": "no-store",
+          "X-Resume-Revision": String(resume.revision),
+        });
+      },
+    )
+    .get(
+      "/api/backup",
+      apiDocs.exportBackup,
+      validator("query", (query) => query),
+      (c) => {
+        const id = c.req.query("id");
+        const resume = id ? store.get(id) : undefined;
+        if (id && !resume) return c.json({ error: "简历不存在" }, 404);
+        const backupData = backupZip(exportBackup(store, id));
+        const filename = getResumeBackupFilename(resume?.title);
+        return c.body(new Uint8Array(backupData), 200, {
+          "Content-Type": "application/zip",
+          "Content-Disposition": `attachment; filename="resumeflow-backup.zip"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+          "Cache-Control": "no-store",
+        });
+      },
+    )
+    .post(
+      "/api/backup/inspect",
+      apiDocs.inspectBackup,
+      jsonValidator(backupRequest),
+      (c) => {
+        const data = readBackup(c.req.valid("json").archive);
+        return c.json(inspectBackup(store, data));
+      },
+    )
+    .post(
+      "/api/backup/restore",
+      apiDocs.restoreBackup,
+      jsonValidator(backupRestoreInput),
+      (c) => {
+        const { archive, decisions } = c.req.valid("json");
+        const result = importBackup(store, readBackup(archive), decisions);
+        return c.json(result, 200);
       },
     )
     .all("/mcp", (c: Context) =>

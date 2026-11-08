@@ -3,6 +3,9 @@ import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { createVersionStore } from "./version-store.ts";
+import { ResumeOperationError } from "./resume-operations.ts";
+import type { ResumeBackupItem } from "@resumeflow/shared";
+import { getBackupConflictToken } from "./backup-token.ts";
 import type {
   Resume,
   ResumeChangedEvent,
@@ -64,12 +67,16 @@ export function createStore(
   const insert = db.prepare(
     "INSERT INTO resumes (id, title, markdown, revision, created_at, updated_at, languages, current_language, theme_color, margin, custom_css, line_height) VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)",
   );
+  const restoreInsert = db.prepare(
+    "INSERT INTO resumes (id, title, markdown, revision, created_at, updated_at, languages, current_language, theme_color, margin, custom_css, line_height) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  );
   const update = db.prepare(
     "UPDATE resumes SET title = ?, markdown = ?, languages = ?, current_language = ?, theme_color = ?, margin = ?, custom_css = ?, line_height = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?",
   );
   const remove = db.prepare(
     "DELETE FROM resumes WHERE id = ? AND revision = ?",
   );
+  const removeById = db.prepare("DELETE FROM resumes WHERE id = ?");
 
   function parseRow(row: Record<string, unknown>): Resume {
     let languages: Record<string, ResumeLanguageItem> = {};
@@ -123,8 +130,89 @@ export function createStore(
       listener({ id: resume.id, revision: resume.revision, versionsChanged });
   }
 
+  const versionStore = createVersionStore(db, get, update, notify);
+  const versionInsert = db.prepare(
+    "INSERT INTO resume_versions VALUES (?, ?, ?, ?, ?)",
+  );
+  const versionExists = db.prepare(
+    "SELECT 1 FROM resume_versions WHERE id = ?",
+  );
+
   return {
-    ...createVersionStore(db, get, update, notify),
+    ...versionStore,
+    restoreBackup(
+      items: ResumeBackupItem[],
+      decisions: { id: string; action: "overwrite" | "copy"; token: string }[],
+    ) {
+      const restored: Resume[] = [];
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        const seen = new Set<string>();
+        for (const item of items) {
+          const source = item.resume;
+          const current = get(source.id);
+          const decision = decisions.find((entry) => entry.id === source.id);
+          const versionIds = db
+            .prepare(
+              "SELECT id FROM resume_versions WHERE resume_id = ? ORDER BY id",
+            )
+            .all(source.id)
+            .map((row) => String(row.id));
+          const token = current
+            ? getBackupConflictToken(current, versionIds, item)
+            : undefined;
+          if (
+            (current && (!decision || decision.token !== token)) ||
+            (!current && decision)
+          )
+            throw new ResumeOperationError(
+              409,
+              "备份冲突已变化，请重新检查并确认",
+            );
+          const id = decision?.action === "copy" ? randomUUID() : source.id;
+          if (seen.has(id))
+            throw new ResumeOperationError(400, "备份包含重复简历");
+          seen.add(id);
+          if (current && decision?.action === "overwrite") removeById.run(id);
+          const revision =
+            current && decision?.action === "overwrite"
+              ? current.revision + 1
+              : source.revision;
+          restoreInsert.run(
+            id,
+            source.title,
+            source.markdown,
+            revision,
+            source.createdAt,
+            current && decision?.action === "overwrite"
+              ? new Date().toISOString()
+              : source.updatedAt,
+            JSON.stringify(source.languages ?? {}),
+            source.currentLanguage || "zh",
+            source.themeColor ?? "",
+            source.margin ?? "",
+            source.customCss ?? "",
+            source.lineHeight ?? null,
+          );
+          for (const version of item.versions ?? []) {
+            versionInsert.run(
+              versionExists.get(version.id) ? randomUUID() : version.id,
+              id,
+              version.title,
+              version.createdAt,
+              JSON.stringify({ ...version.resume, id }),
+            );
+          }
+          restored.push(get(id)!);
+        }
+        db.exec("COMMIT");
+      } catch (error) {
+        db.exec("ROLLBACK");
+        throw error;
+      }
+      for (const resume of restored) notify(resume, true);
+      return restored;
+    },
     list(): ResumeSummary[] {
       return list.all().map((row) => parseRow(row as Record<string, unknown>));
     },

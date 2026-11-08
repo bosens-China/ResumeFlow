@@ -165,3 +165,5 @@ export const versionCreateInput = z.object({
   title: title.describe("历史快照的名称，例如 投递前；不会修改简历名称"),
 });
 export const versionRestoreInput = deleteInput;
+
+export const markdownExportInput = pdfInput;

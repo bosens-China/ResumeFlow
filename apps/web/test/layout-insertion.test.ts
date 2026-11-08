@@ -154,7 +154,7 @@ test(
       );
 
       const exportButton = page.getByRole("button", {
-        name: "导出当前语言 PDF，悬停可选择其他语言",
+        name: "导出 PDF",
       });
       await page.waitForFunction(() =>
         [...document.querySelectorAll("button")].some(

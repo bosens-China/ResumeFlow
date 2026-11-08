@@ -1,10 +1,11 @@
-import type { MouseEvent } from "react";
+import { type MouseEvent, useRef, useState } from "react";
 import type { ResumeSummary } from "@resumeflow/shared";
 import { Link } from "@tanstack/react-router";
 import {
   Clock,
   Copy,
   Download,
+  FileText,
   Languages,
   LoaderCircle,
   MoreHorizontal,
@@ -31,14 +32,17 @@ export function ResumeCard({
   openDelete,
 }: {
   resume: ResumeSummary;
-  openRename: (resume: ResumeSummary, event: MouseEvent) => void;
-  handleDuplicate: (resume: ResumeSummary, event: MouseEvent) => void;
-  openDelete: (resume: ResumeSummary, event: MouseEvent) => void;
+  openRename: (resume: ResumeSummary, event?: MouseEvent) => void;
+  handleDuplicate: (resume: ResumeSummary, event?: MouseEvent) => void;
+  openDelete: (resume: ResumeSummary, event?: MouseEvent) => void;
 }) {
-  const { exportPdf, exporting } = useResumeExport(resume.id, null, () => ({
-    draft: resume,
-    revision: resume.revision,
-  }));
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { exportPdf, exportMarkdown, exportMarkdownAll, exporting } =
+    useResumeExport(resume.id, null, () => ({
+      draft: resume,
+      revision: resume.revision,
+    }));
   const currentLang = resume.currentLanguage ?? "zh";
   const item = resume.languages?.[currentLang];
   const activeTitle = (item?.title ?? resume.title).trim();
@@ -49,6 +53,22 @@ export function ResumeCard({
   );
   const langCount = langCodes.length;
   const currentLangName = getLanguageName(currentLang);
+
+  const openMenu = () => {
+    if (exporting) return;
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setMenuOpen(true);
+  };
+
+  const scheduleClose = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setMenuOpen(false);
+    }, 150);
+  };
 
   return (
     <div className="group relative flex flex-col rounded-xl border border-border bg-card shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:border-foreground/25 hover:shadow-[0_12px_24px_-8px_rgba(0,0,0,0.1),0_4px_8px_-4px_rgba(0,0,0,0.06)]">
@@ -86,14 +106,32 @@ export function ResumeCard({
               {/* 三点操作菜单 */}
               <div
                 className="relative -mr-1 -mt-0.5 shrink-0 cursor-pointer"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
                 onKeyDown={(e) => e.stopPropagation()}
+                onMouseEnter={openMenu}
+                onMouseLeave={scheduleClose}
               >
-                <DropdownMenu>
+                <DropdownMenu
+                  open={exporting ? false : menuOpen}
+                  onOpenChange={(next) => {
+                    if (closeTimerRef.current) {
+                      clearTimeout(closeTimerRef.current);
+                      closeTimerRef.current = null;
+                    }
+                    setMenuOpen(next);
+                  }}
+                  modal={false}
+                >
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
+                      onPointerDown={(e) => {
+                        if (menuOpen) e.preventDefault();
+                      }}
                       className="size-7 cursor-pointer text-muted-foreground/70 hover:bg-muted hover:text-foreground transition-colors"
                       aria-label={exporting ? "正在导出 PDF" : "操作菜单"}
                       disabled={exporting}
@@ -105,24 +143,39 @@ export function ResumeCard({
                       )}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-36">
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-44"
+                    onMouseEnter={openMenu}
+                    onMouseLeave={scheduleClose}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
                     <DropdownMenuItem
-                      onClick={(e) => openRename(resume, e)}
+                      onSelect={() => {
+                        setMenuOpen(false);
+                        openRename(resume);
+                      }}
                       className="gap-2 text-xs cursor-pointer"
                     >
                       <Pencil className="size-3.5" />
                       重命名
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={(e) => handleDuplicate(resume, e)}
+                      onSelect={() => {
+                        setMenuOpen(false);
+                        handleDuplicate(resume);
+                      }}
                       className="gap-2 text-xs cursor-pointer"
                     >
                       <Copy className="size-3.5" />
                       创建副本
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={(event) => {
-                        event.stopPropagation();
+                      onSelect={() => {
+                        setMenuOpen(false);
                         void exportPdf();
                       }}
                       className="gap-2 text-xs cursor-pointer"
@@ -130,9 +183,34 @@ export function ResumeCard({
                       <Download className="size-3.5" />
                       导出 PDF
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        setMenuOpen(false);
+                        void exportMarkdown();
+                      }}
+                      className="gap-2 text-xs cursor-pointer"
+                    >
+                      <FileText className="size-3.5" />
+                      导出 Markdown
+                    </DropdownMenuItem>
+                    {langCount > 1 && (
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          setMenuOpen(false);
+                          void exportMarkdownAll();
+                        }}
+                        className="gap-2 text-xs cursor-pointer"
+                      >
+                        <FileText className="size-3.5" />
+                        导出全部语言 (.zip)
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onClick={(e) => openDelete(resume, e)}
+                      onSelect={() => {
+                        setMenuOpen(false);
+                        openDelete(resume);
+                      }}
                       className="gap-2 text-xs cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
                     >
                       <Trash2 className="size-3.5" />

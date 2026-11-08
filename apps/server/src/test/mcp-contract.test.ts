@@ -301,10 +301,15 @@ test("MCP discovery includes resume templates", async () => {
   const store = createStore(":memory:");
   try {
     const result = await rpc(createApp(store), "tools/list", {});
-    assert.equal(result.tools.length, 12);
+    assert.equal(result.tools.length, 17);
     assert.ok(
       result.tools.some((tool) => tool.name === "list_resume_templates"),
     );
+    assert.ok(
+      result.tools.some((tool) => tool.name === "export_resume_markdown"),
+    );
+    assert.ok(result.tools.some((tool) => tool.name === "export_backup"));
+    assert.ok(result.tools.some((tool) => tool.name === "import_backup"));
   } finally {
     store.close();
   }

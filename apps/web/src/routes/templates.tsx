@@ -106,7 +106,7 @@ function TemplatesPage() {
         </div>
 
         {/* 模板网格卡片展示 */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-[repeat(auto-fill,310px)] gap-6">
           {filteredTemplates.map((template) => (
             <TemplateCard
               key={template.id}

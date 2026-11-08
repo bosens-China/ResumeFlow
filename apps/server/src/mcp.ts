@@ -1,8 +1,19 @@
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod/v4";
-import { RESUME_TEMPLATES } from "@resumeflow/shared";
+import {
+  RESUME_TEMPLATES,
+  getResumeMarkdownFilename,
+} from "@resumeflow/shared";
 import { APP_VERSION } from "./app-version.ts";
 import { duplicateResume, type ResumeStore } from "./store.ts";
+import {
+  backupRequest,
+  backupRestoreInput,
+  exportMarkdownArchive,
+  importBackup,
+  inspectBackup,
+  readBackup,
+} from "./backup.ts";
 import {
   getPdfSource,
   ResumeOperationError,
@@ -177,6 +188,98 @@ export function mcpHandler(store: ResumeStore) {
             revision: resume.revision,
           };
         }),
+    );
+    server.registerTool(
+      "export_resume_markdown",
+      {
+        description:
+          "获取已保存简历或快照的 Markdown 正文与推荐文件名，可指定已有语言和历史快照 versionId",
+        inputSchema: pdfInput,
+      },
+      async ({ id, language, versionId }) =>
+        run(() => {
+          const {
+            resume,
+            language: lang,
+            title,
+          } = getPdfSource(store, id, { language, versionId });
+          const item = resume.languages?.[lang];
+          const markdown = item?.markdown ?? resume.markdown ?? "";
+          return {
+            title,
+            language: lang,
+            filename: getResumeMarkdownFilename(title, lang),
+            markdown,
+            revision: resume.revision,
+          };
+        }),
+    );
+    server.registerTool(
+      "export_resume_markdown_all",
+      {
+        description:
+          "获取简历所有语言 Markdown 的 ZIP 下载地址；只有一种语言时不可导出合集，可指定历史快照",
+        inputSchema: pdfInput,
+      },
+      async ({ id, versionId }) =>
+        run(() => {
+          const { resume } = getPdfSource(store, id, { versionId });
+          exportMarkdownArchive(resume);
+          const base =
+            process.env.RESUMEFLOW_PUBLIC_URL ??
+            new URL(requestInfo!.url).origin;
+          const url = new URL(
+            `${base.replace(/\/$/, "")}/api/resumes/${id}/markdown-all`,
+          );
+          url.searchParams.set("revision", String(resume.revision));
+          if (versionId) url.searchParams.set("versionId", versionId);
+          return { url: url.href };
+        }),
+    );
+    server.registerTool(
+      "export_backup",
+      {
+        description:
+          "获取 ZIP 备份下载地址。省略 id 备份全部，指定 id 备份单份简历；包含所有语言、样式和历史快照",
+        inputSchema: z.object({
+          id: z
+            .string()
+            .uuid()
+            .optional()
+            .describe("可选，要备份的单份简历 UUID"),
+        }),
+      },
+      async ({ id }) =>
+        run(() => {
+          if (id && !store.get(id))
+            throw new ResumeOperationError(404, "简历不存在");
+          const base =
+            process.env.RESUMEFLOW_PUBLIC_URL ??
+            new URL(requestInfo!.url).origin;
+          const url = new URL(`${base.replace(/\/$/, "")}/api/backup`);
+          if (id) url.searchParams.set("id", id);
+          return { url: url.href };
+        }),
+    );
+    server.registerTool(
+      "inspect_backup",
+      {
+        description:
+          "预检 ZIP 备份并列出逐份冲突及确认令牌；发生冲突时必须逐份询问用户，再调用 import_backup",
+        inputSchema: backupRequest,
+      },
+      async ({ archive }) =>
+        run(() => inspectBackup(store, readBackup(archive))),
+    );
+    server.registerTool(
+      "import_backup",
+      {
+        description:
+          "恢复 ZIP 备份。必须先调用 inspect_backup，逐份询问用户选择覆盖或副本，提交每项选择和 token；冲突变化须重新询问。不得自行覆盖",
+        inputSchema: backupRestoreInput,
+      },
+      async ({ archive, decisions }) =>
+        run(() => importBackup(store, readBackup(archive), decisions)),
     );
     return server;
   });

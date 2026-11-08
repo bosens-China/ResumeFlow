@@ -219,6 +219,8 @@ function ResumeDetailPage() {
             }
             exporting={editor.exporting}
             onExport={(lang) => void editor.exportPdf(lang)}
+            onExportMarkdown={(lang) => void editor.exportMarkdown(lang)}
+            onExportMarkdownAll={() => void editor.exportMarkdownAll()}
           />
         </div>
       </header>

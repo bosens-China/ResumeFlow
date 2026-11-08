@@ -9,6 +9,9 @@ import {
   deleteResume,
   duplicateResume,
   getResume,
+  importBackupFile,
+  inspectBackupFile,
+  importMarkdownFile,
   listResumes,
   updateResume,
 } from "../src/lib/resume-store.ts";
@@ -51,6 +54,33 @@ test("hc requests preserve resume operations and revision conflicts", async () =
     );
     await deleteResume(updated.id, updated.revision);
     assert.equal((await listResumes()).length, 0);
+
+    // 测试 importMarkdownFile
+    const mdFile = new File(["# 开发者简历\n\n经历描述"], "张三_高级前端.md", {
+      type: "text/markdown",
+    });
+    const importedFromMd = await importMarkdownFile(mdFile);
+    assert.equal(importedFromMd.title, "张三_高级前端");
+    assert.equal(importedFromMd.markdown, "# 开发者简历\n\n经历描述");
+
+    const backupResponse = await globalThis.fetch("/api/backup");
+    const backupFile = new File([await backupResponse.blob()], "backup.zip", {
+      type: "application/zip",
+    });
+    const inspection = await inspectBackupFile(backupFile);
+    assert.equal(inspection.conflicts.length, 1);
+    const restoreResult = await importBackupFile(
+      inspection.archive,
+      inspection.conflicts.map(({ id, token }) => ({
+        id,
+        token,
+        action: "copy",
+      })),
+    );
+    assert.equal(restoreResult.count, 1);
+    const all = await listResumes();
+    assert.equal(all.length, 2);
+    assert.ok(all.every((r) => r.title === importedFromMd.title));
   } finally {
     globalThis.fetch = originalFetch;
     store.close();

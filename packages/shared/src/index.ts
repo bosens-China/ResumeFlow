@@ -55,3 +55,4 @@ export * from "./resume-css.js";
 export * from "./resume-fonts.js";
 export * from "./templates.js";
 export * from "./resume-icons.js";
+export * from "./backup.js";

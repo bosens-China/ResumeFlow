@@ -264,4 +264,146 @@ export const apiDocs = {
       500: jsonResponse(error, "PDF 生成失败"),
     },
   }),
+  markdownAll: describeRoute({
+    summary: "导出简历所有语言的 Markdown ZIP",
+    description:
+      "至少需要两种语言。可指定历史快照；当前草稿可提供 revision 防止下载较新的内容。",
+    tags: ["简历"],
+    parameters: [
+      { in: "query", name: "versionId", schema: { type: "string" } },
+      { in: "query", name: "revision", schema: { type: "string" } },
+    ],
+    responses: {
+      200: {
+        description: "Markdown ZIP",
+        content: {
+          "application/zip": { schema: { type: "string", format: "binary" } },
+        },
+      },
+      400: validationResponse,
+      404: notFound,
+      409: conflict,
+    },
+  }),
+  markdown: describeRoute({
+    summary: "导出已保存的简历或历史快照 Markdown 正文",
+    description:
+      "返回 text/markdown 原文。支持指定语言和历史快照 versionId。下载时设置 download=1，并采用 Content-Disposition 中 UTF-8 filename* 提供的文件名。",
+    tags: ["简历"],
+    parameters: [
+      {
+        in: "query",
+        name: "versionId",
+        description: "可选，历史快照 UUID",
+        schema: { type: "string" },
+      },
+      {
+        in: "query",
+        name: "lang",
+        description:
+          "已有语言代码；省略使用所选草稿或快照的当前语言，不存在时返回 400",
+        schema: { type: "string" },
+      },
+      {
+        in: "query",
+        name: "download",
+        description: "设为 1 下载为附件",
+        schema: { type: "string", enum: ["1"] },
+      },
+    ],
+    responses: {
+      200: {
+        description: "Markdown 文本内容",
+        content: {
+          "text/markdown": { schema: { type: "string" } },
+        },
+      },
+      404: notFound,
+    },
+  }),
+  exportBackup: describeRoute({
+    summary: "导出数据备份 (ZIP)",
+    description:
+      "导出单份简历或全量简历库的配置快照，包含多语言、自定义样式与版本历史。",
+    tags: ["数据管理"],
+    parameters: [
+      {
+        in: "query",
+        name: "id",
+        description: "可选，单份简历 UUID；省略时导出全量备份",
+        schema: { type: "string" },
+      },
+    ],
+    responses: {
+      200: {
+        description: "包含完整数据和当前 Markdown 的 ZIP 备份",
+        content: {
+          "application/zip": { schema: { type: "string", format: "binary" } },
+        },
+      },
+      404: notFound,
+    },
+  }),
+  inspectBackup: describeRoute({
+    summary: "预检 ZIP 备份",
+    description: "上传 Base64 编码 ZIP，返回逐份冲突和 token，不写入数据。",
+    tags: ["数据管理"],
+    responses: {
+      200: {
+        description: "待确认冲突清单",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["count", "conflicts"],
+              properties: {
+                count: { type: "integer" },
+                conflicts: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    required: ["id", "title", "currentTitle", "token"],
+                    properties: {
+                      id: { type: "string" },
+                      title: { type: "string" },
+                      currentTitle: { type: "string" },
+                      token: {
+                        type: "string",
+                        description: "确认后原样提交；数据变化时需重新预检",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      400: validationResponse,
+    },
+  }),
+  restoreBackup: describeRoute({
+    summary: "恢复 ZIP 备份",
+    description:
+      "先调用预检，对每份冲突询问用户，提交其覆盖或副本选择及 token；冲突变化时重新确认。整次恢复原子完成。",
+    tags: ["数据管理"],
+    responses: {
+      200: {
+        description: "恢复成功结果",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                count: { type: "number" },
+                resumes: { type: "array", items: { type: "object" } },
+              },
+            },
+          },
+        },
+      },
+      400: validationResponse,
+      409: conflict,
+    },
+  }),
 };

@@ -1,5 +1,14 @@
-import { ChevronDown, Download } from "lucide-react";
+import { useRef, useState } from "react";
+import { ChevronDown, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getLanguageLabel } from "@/lib/format";
 
 interface ResumeExportButtonProps {
@@ -8,6 +17,8 @@ interface ResumeExportButtonProps {
   disabled?: boolean;
   exporting?: boolean;
   onExport: (lang?: string) => void;
+  onExportMarkdown?: (lang?: string) => void;
+  onExportMarkdownAll?: () => void;
 }
 
 export function ResumeExportButton({
@@ -16,78 +27,116 @@ export function ResumeExportButton({
   disabled,
   exporting,
   onExport,
+  onExportMarkdown,
+  onExportMarkdownAll,
 }: ResumeExportButtonProps) {
+  const [open, setOpen] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const allCodes = Array.from(
     new Set([...Object.keys(languages), currentLanguage]),
   );
-  const hasMultiple = allCodes.length > 1;
+  const blocked = disabled || exporting;
 
-  if (!hasMultiple) {
-    return (
+  const openMenu = () => {
+    if (blocked) return;
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setOpen(true);
+  };
+
+  const scheduleClose = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 150);
+  };
+
+  return (
+    <div
+      className="inline-flex items-center rounded-[min(var(--radius-md),10px)] bg-gradient-to-r from-blue-600 to-indigo-600 shadow-xs transition-all hover:from-blue-500 hover:to-indigo-500 has-[button:disabled]:opacity-50 has-[button:disabled]:pointer-events-none"
+      onMouseEnter={openMenu}
+      onMouseLeave={scheduleClose}
+    >
       <Button
+        variant="ghost"
         size="sm"
+        disabled={blocked}
         onClick={() => onExport(currentLanguage)}
-        disabled={disabled || exporting}
-        className="h-8 gap-1.5 px-3 text-xs font-medium shadow-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/20 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+        className="h-8 gap-1.5 rounded-r-none border-none bg-transparent pr-1.5 text-xs text-white hover:bg-white/15 hover:text-white disabled:opacity-100 cursor-pointer"
       >
         <Download className="size-3.5" />
         {exporting ? "导出中…" : "导出 PDF"}
       </Button>
-    );
-  }
-
-  return (
-    <div className="relative group inline-flex items-center">
-      <Button
-        size="sm"
-        onClick={() => onExport(currentLanguage)}
-        disabled={disabled || exporting}
-        className="h-8 gap-1.5 px-2.5 text-xs font-medium shadow-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/20 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
-        aria-label="导出当前语言 PDF，悬停可选择其他语言"
+      <DropdownMenu
+        open={blocked ? false : open}
+        onOpenChange={(next) => {
+          if (closeTimerRef.current) {
+            clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+          }
+          setOpen(next);
+        }}
+        modal={false}
       >
-        <Download className="size-3.5" />
-        <span>{exporting ? "导出中…" : "导出 PDF"}</span>
-        <span className="text-[10px] bg-white/20 px-1 py-0.5 rounded font-mono">
-          {currentLanguage}
-        </span>
-        <ChevronDown className="size-3 opacity-70 group-hover:rotate-180 transition-transform" />
-      </Button>
-
-      <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-150 absolute right-0 top-full pt-1.5 z-50 pointer-events-none group-hover:pointer-events-auto">
-        <div className="w-56 rounded-md border border-border bg-popover p-1.5 text-popover-foreground shadow-lg">
-          <div className="px-2 py-1 text-[11px] font-medium text-muted-foreground border-b mb-1">
-            导出语言版本
-          </div>
-
-          <div className="space-y-0.5">
-            {allCodes.map((code) => {
-              const isCurrent = code === currentLanguage;
-              return (
-                <button
-                  key={code}
-                  type="button"
-                  disabled={disabled || exporting}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onExport(code);
-                  }}
-                  className="w-full flex items-center justify-between rounded px-2 py-1.5 text-xs hover:bg-accent cursor-pointer transition-colors text-left disabled:opacity-50"
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={blocked}
+            aria-label="更多导出选项"
+            onPointerDown={(e) => {
+              if (open) e.preventDefault();
+            }}
+            className="h-8 rounded-l-none border-none bg-transparent pl-1 pr-2 text-white hover:bg-white/15 hover:text-white aria-expanded:bg-white/15 aria-expanded:text-white disabled:opacity-100 cursor-pointer"
+          >
+            <ChevronDown className="size-3.5 opacity-90 transition-transform duration-200 group-aria-expanded/button:rotate-180" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="w-52"
+          onMouseEnter={openMenu}
+          onMouseLeave={scheduleClose}
+        >
+          {allCodes.length > 1 ? (
+            <>
+              <DropdownMenuLabel>导出 PDF</DropdownMenuLabel>
+              {allCodes.map((code) => (
+                <DropdownMenuItem
+                  key={`pdf-${code}`}
+                  onSelect={() => onExport(code)}
                 >
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="truncate">{getLanguageLabel(code)}</span>
-                    {isCurrent && (
-                      <span className="text-[10px] text-primary font-medium">
-                        (当前)
-                      </span>
-                    )}
-                  </div>
-                  <Download className="size-3.5 text-muted-foreground shrink-0" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+                  {getLanguageLabel(code)}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>导出 Markdown</DropdownMenuLabel>
+              {allCodes.map((code) => (
+                <DropdownMenuItem
+                  key={code}
+                  onSelect={() => onExportMarkdown?.(code)}
+                >
+                  <FileText className="size-3.5" />
+                  {getLanguageLabel(code)} (.md)
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuItem onSelect={onExportMarkdownAll}>
+                <FileText className="size-3.5" />
+                导出全部语言 (.zip)
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <DropdownMenuItem
+              onSelect={() => onExportMarkdown?.(currentLanguage)}
+            >
+              <FileText className="size-3.5" />
+              导出 Markdown (.md)
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
