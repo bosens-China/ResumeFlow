@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/bosens-China/ResumeFlow/compare/v1.1.0...v1.2.0) (2026-11-08)
+
+
+### Features
+
+* 支持简历备份恢复与 Markdown 导入导出 ([fffe31a](https://github.com/bosens-China/ResumeFlow/commit/fffe31a920bf162b224db7cfd8d829eb53a26e34))
+
 ## [1.1.0](https://github.com/bosens-China/ResumeFlow/compare/v1.0.0...v1.1.0) (2026-11-07)
 
 
